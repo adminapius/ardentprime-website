@@ -71,7 +71,7 @@ export function Partners() {
                 <img
                   src={partner.logo || "/placeholder.svg"}
                   alt={partner.name}
-                  className="max-w-full h-auto object-contain"
+                  className="w-[173px] h-[98px] object-contain"
                 />
               </Link>
             ))}
