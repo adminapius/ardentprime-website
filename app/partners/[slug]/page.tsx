@@ -298,7 +298,7 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
                 <img
                   src={partner.logo || "/placeholder.svg"}
                   alt={partner.name}
-                  className="max-w-full h-auto object-contain"
+                  className="max-w-[200px] max-h-[80px] w-auto h-auto object-contain"
                 />
               </div>
               <div className="flex-1 text-center md:text-left">
