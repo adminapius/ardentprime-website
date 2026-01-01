@@ -66,12 +66,12 @@ export function Partners() {
               <Link
                 key={partner.id}
                 href={`/partners/${partner.slug}`}
-                className="flex items-center justify-center p-6 bg-card rounded-lg border border-border hover:border-primary transition-all hover:shadow-lg grayscale hover:grayscale-0 cursor-pointer"
+                className="flex items-center justify-center p-6 bg-card rounded-lg border border-border hover:border-primary transition-all hover:shadow-lg grayscale hover:grayscale-0 cursor-pointer w-full h-[130px]"
               >
                 <img
                   src={partner.logo || "/placeholder.svg"}
                   alt={partner.name}
-                  className="max-w-[173px] h-[98px] object-contain mx-auto"
+                  className="w-[173px] h-[98px] object-contain"
                 />
               </Link>
             ))}
