@@ -4,13 +4,60 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://ardentprime.com"
   const currentDate = new Date()
 
-  // Main pages
   const mainPages = [
     {
       url: baseUrl,
       lastModified: currentDate,
       changeFrequency: "weekly" as const,
       priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services/it-infrastructure`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/services/installation-integration`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/services/managed-it-web`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/partners`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: currentDate,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/news`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/support-center`,
@@ -66,7 +113,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }))
 
   // News pages
-  const newsIds = ["innovation", "cybersecurity", "infrastructure", "sustainability", "physical-security", "case-study"]
+  const newsIds = [1, 2, 3, 4, 5, 6]
 
   const newsPages = newsIds.map((id) => ({
     url: `${baseUrl}/news/${id}`,
