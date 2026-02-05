@@ -89,6 +89,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const partners = [
     "hp",
     "ingram-micro",
+    "sectigo",
     "pelco",
     "avigilon",
     "axis",

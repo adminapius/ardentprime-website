@@ -60,6 +60,27 @@ const partnersData: Record<
       "Global logistics support",
     ],
   },
+  sectigo: {
+    name: "Sectigo",
+    description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
+    logo: "/images/partners/sectigo-logo.jpg",
+    website: "https://www.sectigo.com",
+    videoUrl: "",
+    solutions: [
+      "SSL/TLS Certificates",
+      "Automated Certificate Management",
+      "Web Application Firewall (WAF)",
+      "Code Signing Certificates",
+    ],
+    partnership:
+      "Ardent Prime Innovations has partnered with Sectigo to provide our clients with industry-leading SSL/TLS certificates and comprehensive web security solutions. This partnership ensures that our clients' websites, applications, and digital communications are protected with the highest level of encryption and trust.",
+    benefits: [
+      "Trusted SSL/TLS certificates recognized by all major browsers",
+      "Automated certificate lifecycle management",
+      "Enhanced web application security with WAF protection",
+      "Comprehensive code signing for software integrity",
+    ],
+  },
   pelco: {
     name: "Pelco",
     description: "Industry leader in security camera systems and video surveillance solutions.",
