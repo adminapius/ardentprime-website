@@ -28,7 +28,7 @@ const partnersData: Record<
     description: "Global leader in personal computing and printing solutions for businesses.",
     logo: "/images/partners/hp-logo.png",
     website: "https://www.hp.com",
-    videoUrl: "https://www.youtube.com/watch?v=HUutg28v-Ds",
+    videoUrl: "https://www.youtube.com/watch?v=KdB4v9ssdIY",
     solutions: [
       "Enterprise Workstations",
       "Business Laptops & Desktops",
