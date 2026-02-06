@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import type { Metadata } from "next"
+import { PartnerNews } from "@/components/partner-news"
 
 export const metadata: Metadata = {
   title: "News & Insights | Ardent Prime Innovations LLC",
@@ -117,6 +118,9 @@ export default function NewsPage() {
             </div>
           </div>
         </section>
+
+        {/* Partner News & Advisories - Live RSS Feeds */}
+        <PartnerNews />
       </main>
       <Footer />
     </>

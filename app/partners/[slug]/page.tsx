@@ -337,7 +337,12 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
             <div className="mb-12">
               <h2 className="text-3xl font-bold mb-6">Partner Overview</h2>
               {partner.videoUrl ? (
-                <VideoEmbed url={partner.videoUrl} title={`${partner.name} Overview Video`} />
+                <>
+                  <VideoEmbed url={partner.videoUrl} title={`${partner.name} Overview Video`} />
+                  <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                    Video content courtesy of {partner.name}. All trademarks belong to their respective owners.
+                  </p>
+                </>
               ) : (
                 <div className="bg-muted/50 rounded-lg border-2 border-dashed border-border p-12 text-center aspect-video flex flex-col items-center justify-center max-w-3xl mx-auto">
                   <p className="text-muted-foreground text-lg">Video content coming soon</p>

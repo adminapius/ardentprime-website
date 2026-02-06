@@ -9,15 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Phone, MapPin, Clock } from "lucide-react"
+import { Mail, Phone, MapPin, Clock, Loader2 } from "lucide-react"
 import { submitContactForm } from "@/app/actions/contact"
-import { validateEmail } from "@/lib/email-validator"
+import { validateEmail, validateFullName } from "@/lib/email-validator"
+import { validateEmailDomain } from "@/app/actions/validate-email-domain"
 
 const MAX_FULL_NAME = 100
 const MAX_EMAIL = 100
 const MAX_COMPANY = 100
 const MAX_PHONE = 20
-const MESSAGE_CHAR_LIMIT = 1000
+const MESSAGE_CHAR_LIMIT = 500
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -29,14 +30,18 @@ export default function ContactPage() {
     message: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailDomainValid, setEmailDomainValid] = useState<boolean | null>(null)
   const [fullNameError, setFullNameError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [serviceError, setServiceError] = useState<string | null>(null)
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const email = e.target.value
     setFormData({ ...formData, email })
+    setEmailDomainValid(null)
 
     if (email) {
       const validation = validateEmail(email)
@@ -50,13 +55,44 @@ export default function ContactPage() {
     }
   }
 
+  const handleEmailBlur = async () => {
+    const email = formData.email
+    if (!email) return
+
+    const clientValidation = validateEmail(email)
+    if (!clientValidation.valid) return
+
+    // DNS MX record check
+    setIsValidatingEmail(true)
+    setEmailError(null)
+    try {
+      const result = await validateEmailDomain(email)
+      if (!result.valid) {
+        setEmailError(result.error || "Invalid email domain")
+        setEmailDomainValid(false)
+      } else {
+        setEmailDomainValid(true)
+        setEmailError(null)
+      }
+    } catch {
+      setEmailDomainValid(true)
+    } finally {
+      setIsValidatingEmail(false)
+    }
+  }
+
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fullName = e.target.value
     if (fullName.length <= MAX_FULL_NAME) {
       setFormData({ ...formData, fullName })
 
-      if (fullName && !fullName.trim().includes(" ")) {
-        setFullNameError("Please enter both first and last name")
+      if (fullName) {
+        const nameValidation = validateFullName(fullName)
+        if (!nameValidation.valid) {
+          setFullNameError(nameValidation.error || "Invalid name")
+        } else {
+          setFullNameError(null)
+        }
       } else {
         setFullNameError(null)
       }
@@ -95,18 +131,27 @@ export default function ContactPage() {
     }
   }
 
+  const handleServiceChange = (value: string) => {
+    setFormData({ ...formData, service: value })
+    setServiceError(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setSubmitStatus(null)
+    setServiceError(null)
 
-    if (!formData.fullName.trim().includes(" ")) {
+    // Name validation
+    const nameValidation = validateFullName(formData.fullName)
+    if (!nameValidation.valid) {
       setIsLoading(false)
-      setFullNameError("Please enter both first and last name")
-      setSubmitStatus({ type: "error", message: "Please enter your full name (first and last name)" })
+      setFullNameError(nameValidation.error || "Invalid name")
+      setSubmitStatus({ type: "error", message: nameValidation.error || "Please enter a valid full name" })
       return
     }
 
+    // Email client validation
     const validation = validateEmail(formData.email)
     if (!validation.valid) {
       setIsLoading(false)
@@ -115,11 +160,31 @@ export default function ContactPage() {
       return
     }
 
+    // Phone validation
     const phoneDigits = formData.phone.replace(/\D/g, "")
     if (phoneDigits.length !== 10) {
       setIsLoading(false)
       setPhoneError("Phone number must be exactly 10 digits")
       setSubmitStatus({ type: "error", message: "Please enter a valid 10-digit phone number" })
+      return
+    }
+
+    // Service Interest validation
+    if (!formData.service) {
+      setIsLoading(false)
+      setServiceError("Please select a Service Interest")
+      setSubmitStatus({ type: "error", message: "Please select a Service Interest" })
+      return
+    }
+
+    // DNS domain validation with loading state
+    setIsValidatingEmail(true)
+    const domainResult = await validateEmailDomain(formData.email)
+    setIsValidatingEmail(false)
+    if (!domainResult.valid) {
+      setIsLoading(false)
+      setEmailError(domainResult.error || "Invalid email domain")
+      setSubmitStatus({ type: "error", message: domainResult.error || "Email domain does not exist" })
       return
     }
 
@@ -149,8 +214,10 @@ export default function ContactPage() {
         message: "",
       })
       setEmailError(null)
+      setEmailDomainValid(null)
       setFullNameError(null)
       setPhoneError(null)
+      setServiceError(null)
     } else {
       setSubmitStatus({ type: "error", message: result.error || "Failed to send message. Please try again." })
     }
@@ -254,6 +321,15 @@ export default function ContactPage() {
                   <div>
                     <Label htmlFor="email">
                       Email Address <span className="text-destructive">*</span>
+                      {isValidatingEmail && (
+                        <span className="text-muted-foreground text-xs ml-2 inline-flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Validating domain...
+                        </span>
+                      )}
+                      {emailDomainValid === true && !isValidatingEmail && !emailError && formData.email && (
+                        <span className="text-green-600 text-xs ml-2">Domain verified</span>
+                      )}
                     </Label>
                     <Input
                       id="email"
@@ -261,6 +337,7 @@ export default function ContactPage() {
                       placeholder="john@company.com"
                       value={formData.email}
                       onChange={handleEmailChange}
+                      onBlur={handleEmailBlur}
                       required
                       maxLength={MAX_EMAIL}
                       className="mt-2"
@@ -307,10 +384,10 @@ export default function ContactPage() {
                     </Label>
                     <Select
                       value={formData.service}
-                      onValueChange={(value) => setFormData({ ...formData, service: value })}
+                      onValueChange={handleServiceChange}
                       required
                     >
-                      <SelectTrigger className="mt-2 w-full">
+                      <SelectTrigger className={`mt-2 w-full ${serviceError ? "border-red-500" : ""}`}>
                         <SelectValue placeholder="Select a service" />
                       </SelectTrigger>
                       <SelectContent>
@@ -319,12 +396,13 @@ export default function ContactPage() {
                         <SelectItem value="managed">Managed IT & Web Services</SelectItem>
                       </SelectContent>
                     </Select>
+                    {serviceError && <p className="text-sm text-red-500 mt-1">{serviceError}</p>}
                   </div>
 
                   <div>
                     <Label htmlFor="message">
                       Message <span className="text-destructive">*</span>
-                      <span className="text-muted-foreground text-xs ml-2">
+                      <span className={`text-xs ml-2 ${formData.message.length >= MESSAGE_CHAR_LIMIT ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
                         ({formData.message.length}/{MESSAGE_CHAR_LIMIT} characters)
                       </span>
                     </Label>
@@ -347,8 +425,15 @@ export default function ContactPage() {
                     </div>
                   )}
 
-                  <Button type="submit" size="lg" className="w-full text-lg" disabled={isLoading}>
-                    {isLoading ? "Sending..." : "Send Message"}
+                  <Button type="submit" size="lg" className="w-full text-lg" disabled={isLoading || isValidatingEmail}>
+                    {isLoading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Sending...
+                      </span>
+                    ) : (
+                      "Send Message"
+                    )}
                   </Button>
                 </form>
               </div>
