@@ -11,14 +11,16 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { submitSupportTicket } from "@/app/actions/support"
+import { validateEmail } from "@/lib/email-validator"
+import { validateEmailDomain } from "@/app/actions/validate-email-domain"
 
 const MAX_COMPANY_NAME = 100
 const MAX_FIRST_NAME = 50
 const MAX_LAST_NAME = 50
 const MAX_EMAIL = 100
-const MAX_SUBJECT = 200
+const MAX_SUBJECT = 100
 const MAX_MESSAGE = 2000
 
 export default function SupportCenterPage() {
@@ -35,9 +37,15 @@ export default function SupportCenterPage() {
 
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false)
   const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [companyError, setCompanyError] = useState<string>("")
   const [phoneError, setPhoneError] = useState<string>("")
+  const [emailError, setEmailError] = useState<string>("")
+  const [emailDomainValid, setEmailDomainValid] = useState<boolean | null>(null)
+  const [priorityError, setPriorityError] = useState<string>("")
+  const [firstNameError, setFirstNameError] = useState<string>("")
+  const [lastNameError, setLastNameError] = useState<string>("")
 
   const router = useRouter()
 
@@ -70,17 +78,129 @@ export default function SupportCenterPage() {
     }
   }
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value
+    if (email.length <= MAX_EMAIL) {
+      setFormData({ ...formData, email })
+      setEmailDomainValid(null)
+
+      if (email) {
+        const validation = validateEmail(email)
+        if (!validation.valid) {
+          setEmailError(validation.error || "Invalid email")
+        } else {
+          setEmailError("")
+        }
+      } else {
+        setEmailError("")
+      }
+    }
+  }
+
+  const handleEmailBlur = async () => {
+    const email = formData.email
+    if (!email) return
+
+    const clientValidation = validateEmail(email)
+    if (!clientValidation.valid) return
+
+    setIsValidatingEmail(true)
+    setEmailError("")
+    try {
+      const result = await validateEmailDomain(email)
+      if (!result.valid) {
+        setEmailError(result.error || "Invalid email domain")
+        setEmailDomainValid(false)
+      } else {
+        setEmailDomainValid(true)
+        setEmailError("")
+      }
+    } catch {
+      setEmailDomainValid(true)
+    } finally {
+      setIsValidatingEmail(false)
+    }
+  }
+
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (val.length <= MAX_FIRST_NAME) {
+      setFormData({ ...formData, firstName: val })
+      if (val && val.trim().length < 2) {
+        setFirstNameError("First name must be at least 2 characters")
+      } else {
+        setFirstNameError("")
+      }
+    }
+  }
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (val.length <= MAX_LAST_NAME) {
+      setFormData({ ...formData, lastName: val })
+      if (val && val.trim().length < 2) {
+        setLastNameError("Last name must be at least 2 characters")
+      } else {
+        setLastNameError("")
+      }
+    }
+  }
+
+  const handlePriorityChange = (value: string) => {
+    setFormData({ ...formData, priority: value })
+    setPriorityError("")
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitMessage(null)
     setCompanyError("")
     setPhoneError("")
+    setPriorityError("")
 
+    // Name validation
+    if (formData.firstName.trim().length < 2) {
+      setIsSubmitting(false)
+      setFirstNameError("First name must be at least 2 characters")
+      return
+    }
+    if (formData.lastName.trim().length < 2) {
+      setIsSubmitting(false)
+      setLastNameError("Last name must be at least 2 characters")
+      return
+    }
+
+    // Email client validation
+    const emailValidation = validateEmail(formData.email)
+    if (!emailValidation.valid) {
+      setIsSubmitting(false)
+      setEmailError(emailValidation.error || "Invalid email")
+      return
+    }
+
+    // Phone validation
     const phoneDigits = formData.phone.replace(/\D/g, "")
     if (phoneDigits.length !== 10) {
       setIsSubmitting(false)
       setPhoneError("Phone number must be exactly 10 digits")
+      return
+    }
+
+    // Priority required
+    if (!formData.priority) {
+      setIsSubmitting(false)
+      setPriorityError("Please select a Priority level")
+      return
+    }
+
+    // DNS domain validation
+    setIsValidatingEmail(true)
+    const domainResult = await validateEmailDomain(formData.email)
+    setIsValidatingEmail(false)
+    if (!domainResult.valid) {
+      setIsSubmitting(false)
+      setEmailError(domainResult.error || "Invalid email domain")
       return
     }
 
@@ -89,7 +209,7 @@ export default function SupportCenterPage() {
     if (result.success) {
       setSubmitMessage({
         type: "success",
-        text: "Thank you! Your support ticket has been submitted successfully. Our team will respond within 24 hours.",
+        text: "Thank you! Your support ticket has been submitted successfully. Our team will respond within 24 hours. A confirmation email has been sent to your inbox.",
       })
       setFormData({
         company: "",
@@ -101,11 +221,15 @@ export default function SupportCenterPage() {
         priority: "",
         message: "",
       })
+      setEmailError("")
+      setEmailDomainValid(null)
+      setFirstNameError("")
+      setLastNameError("")
     } else {
       if (result.error === "company_not_found") {
         setCompanyError(
           result.message ||
-            "We could not find your company in our active contract records. Please contact sales@ardentprime.com.",
+            "We couldn't find an active service contract associated with your information.",
         )
       } else {
         setSubmitMessage({
@@ -141,10 +265,6 @@ export default function SupportCenterPage() {
     },
   ]
 
-  const handleContactClick = () => {
-    router.push("/?scrollTo=contact")
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -154,8 +274,7 @@ export default function SupportCenterPage() {
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support
-            team.
+            {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
           </p>
         </div>
       </section>
@@ -165,7 +284,7 @@ export default function SupportCenterPage() {
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="bg-card p-8 rounded-xl border border-border shadow-lg">
             <h2 className="text-3xl font-bold mb-2">Submit a Support Ticket</h2>
-            <p className="text-muted-foreground mb-8">Fill out the form below and we'll get back to you shortly.</p>
+            <p className="text-muted-foreground mb-8">{"Fill out the form below and we'll get back to you shortly."}</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -205,15 +324,12 @@ export default function SupportCenterPage() {
                     id="firstName"
                     placeholder="John"
                     value={formData.firstName}
-                    onChange={(e) => {
-                      if (e.target.value.length <= MAX_FIRST_NAME) {
-                        setFormData({ ...formData, firstName: e.target.value })
-                      }
-                    }}
+                    onChange={handleFirstNameChange}
                     required
                     maxLength={MAX_FIRST_NAME}
                     className="mt-2"
                   />
+                  {firstNameError && <p className="text-sm text-red-500 mt-1">{firstNameError}</p>}
                 </div>
 
                 <div>
@@ -224,15 +340,12 @@ export default function SupportCenterPage() {
                     id="lastName"
                     placeholder="Doe"
                     value={formData.lastName}
-                    onChange={(e) => {
-                      if (e.target.value.length <= MAX_LAST_NAME) {
-                        setFormData({ ...formData, lastName: e.target.value })
-                      }
-                    }}
+                    onChange={handleLastNameChange}
                     required
                     maxLength={MAX_LAST_NAME}
                     className="mt-2"
                   />
+                  {lastNameError && <p className="text-sm text-red-500 mt-1">{lastNameError}</p>}
                 </div>
               </div>
 
@@ -240,21 +353,28 @@ export default function SupportCenterPage() {
                 <div>
                   <Label htmlFor="email">
                     Email Address <span className="text-destructive">*</span>
+                    {isValidatingEmail && (
+                      <span className="text-muted-foreground text-xs ml-2 inline-flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Validating domain...
+                      </span>
+                    )}
+                    {emailDomainValid === true && !isValidatingEmail && !emailError && formData.email && (
+                      <span className="text-green-600 text-xs ml-2">Domain verified</span>
+                    )}
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="john@company.com"
                     value={formData.email}
-                    onChange={(e) => {
-                      if (e.target.value.length <= MAX_EMAIL) {
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                    }}
+                    onChange={handleEmailChange}
+                    onBlur={handleEmailBlur}
                     required
                     maxLength={MAX_EMAIL}
                     className="mt-2"
                   />
+                  {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
                 </div>
 
                 <div>
@@ -279,7 +399,7 @@ export default function SupportCenterPage() {
                 <div>
                   <Label htmlFor="subject">
                     Subject <span className="text-destructive">*</span>
-                    <span className="text-muted-foreground text-xs ml-2">
+                    <span className={`text-xs ml-2 ${formData.subject.length >= MAX_SUBJECT ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
                       ({formData.subject.length}/{MAX_SUBJECT})
                     </span>
                   </Label>
@@ -304,10 +424,10 @@ export default function SupportCenterPage() {
                   </Label>
                   <Select
                     value={formData.priority}
-                    onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                    onValueChange={handlePriorityChange}
                     required
                   >
-                    <SelectTrigger className="mt-2 w-full">
+                    <SelectTrigger className={`mt-2 w-full ${priorityError ? "border-red-500" : ""}`}>
                       <SelectValue placeholder="Select priority level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,13 +437,14 @@ export default function SupportCenterPage() {
                       <SelectItem value="critical">Critical - System down</SelectItem>
                     </SelectContent>
                   </Select>
+                  {priorityError && <p className="text-sm text-red-500 mt-1">{priorityError}</p>}
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="message">
                   Message <span className="text-destructive">*</span>
-                  <span className="text-muted-foreground text-xs ml-2">
+                  <span className={`text-xs ml-2 ${formData.message.length >= MAX_MESSAGE ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
                     ({formData.message.length}/{MAX_MESSAGE})
                   </span>
                 </Label>
@@ -343,8 +464,15 @@ export default function SupportCenterPage() {
                 />
               </div>
 
-              <Button type="submit" size="lg" className="w-full text-lg" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit Ticket"}
+              <Button type="submit" size="lg" className="w-full text-lg" disabled={isSubmitting || isValidatingEmail}>
+                {isSubmitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Submitting...
+                  </span>
+                ) : (
+                  "Submit Ticket"
+                )}
               </Button>
 
               {submitMessage && (
@@ -397,7 +525,7 @@ export default function SupportCenterPage() {
 
           <div className="mt-12 text-center">
             <p className="text-lg mb-4">Still need help?</p>
-            <Button size="lg" onClick={handleContactClick}>
+            <Button size="lg" onClick={() => router.push("/contact")}>
               Contact Us
             </Button>
           </div>

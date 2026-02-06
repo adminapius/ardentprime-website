@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react"
 import { VideoEmbed } from "@/components/video-embed"
 import { useEffect } from "react"
+import Link from "next/link"
 
-// Partner data - you can move this to a database later
+// Partner data
 const partnersData: Record<
   string,
   {
@@ -27,7 +28,7 @@ const partnersData: Record<
     description: "Global leader in personal computing and printing solutions for businesses.",
     logo: "/images/partners/hp-logo.png",
     website: "https://www.hp.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=KdB4v9ssdIY",
     solutions: [
       "Enterprise Workstations",
       "Business Laptops & Desktops",
@@ -48,7 +49,7 @@ const partnersData: Record<
     description: "World's largest technology distributor and supply chain solutions provider.",
     logo: "/images/partners/ingram-micro-logo.png",
     website: "https://www.ingrammicro.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=BejEZFMMBJk",
     solutions: ["Technology Distribution", "Supply Chain Services", "Cloud Solutions", "Lifecycle Services"],
     partnership:
       "Our strategic partnership with Ingram Micro ensures we have access to a comprehensive portfolio of technology products and services to meet all client needs.",
@@ -59,12 +60,33 @@ const partnersData: Record<
       "Global logistics support",
     ],
   },
+  sectigo: {
+    name: "Sectigo",
+    description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
+    logo: "/images/partners/sectigo-logo.jpg",
+    website: "https://www.sectigo.com",
+    videoUrl: "https://www.youtube.com/watch?v=X5K6i5r7gz0",
+    solutions: [
+      "SSL/TLS Certificates",
+      "Automated Certificate Management",
+      "Web Application Firewall (WAF)",
+      "Code Signing Certificates",
+    ],
+    partnership:
+      "Ardent Prime Innovations has partnered with Sectigo to provide our clients with industry-leading SSL/TLS certificates and comprehensive web security solutions. This partnership ensures that our clients' websites, applications, and digital communications are protected with the highest level of encryption and trust.",
+    benefits: [
+      "Trusted SSL/TLS certificates recognized by all major browsers",
+      "Automated certificate lifecycle management",
+      "Enhanced web application security with WAF protection",
+      "Comprehensive code signing for software integrity",
+    ],
+  },
   pelco: {
     name: "Pelco",
     description: "Industry leader in security camera systems and video surveillance solutions.",
     logo: "/images/partners/pelco-logo.png",
     website: "https://www.pelco.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=B_lw-lMvQnU",
     solutions: ["IP Security Cameras", "Video Management Systems", "Analytics Software", "PTZ Camera Systems"],
     partnership:
       "Through our partnership with Pelco, we provide comprehensive video surveillance solutions to protect your facilities and assets with cutting-edge technology.",
@@ -80,7 +102,7 @@ const partnersData: Record<
     description: "Advanced AI-powered video security and analytics solutions provider.",
     logo: "/images/partners/avigilon-logo.png",
     website: "https://www.avigilon.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=_4OWxx9RTPw",
     solutions: [
       "AI-Powered Video Analytics",
       "High-Definition Cameras",
@@ -101,7 +123,7 @@ const partnersData: Record<
     description: "Global leader in network video and access control solutions.",
     logo: "/images/partners/axis-logo.png",
     website: "https://www.axis.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=FnQasRVqI34",
     solutions: ["Network Cameras", "Video Encoders", "Access Control Systems", "Audio Systems"],
     partnership:
       "Our alliance with Axis brings enterprise-grade network video solutions that provide exceptional image quality and reliability.",
@@ -117,7 +139,7 @@ const partnersData: Record<
     description: "Trusted provider of mission-critical communication and security solutions.",
     logo: "/images/partners/motorola-solutions-logo.png",
     website: "https://www.motorolasolutions.com",
-    videoUrl: "",
+    videoUrl: "https://youtu.be/AGmoQOVSPkE?si=oWxuq0Ji9D7Wduzr",
     solutions: [
       "Two-Way Radio Systems",
       "Video Security Solutions",
@@ -138,7 +160,7 @@ const partnersData: Record<
     description: "Global technology leader in networking, security, and collaboration.",
     logo: "/images/partners/cisco-logo.png",
     website: "https://www.cisco.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=GbbWVZDUgoI",
     solutions: ["Network Infrastructure", "Cybersecurity Solutions", "Collaboration Tools", "Data Center Technologies"],
     partnership:
       "Together with Cisco, we offer comprehensive networking and security solutions that form the backbone of modern IT infrastructure.",
@@ -154,7 +176,7 @@ const partnersData: Record<
     description: "Leading technology company providing cloud, productivity, and AI solutions.",
     logo: "/images/partners/microsoft-logo.png",
     website: "https://www.microsoft.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=1aXrgLlqdbg",
     solutions: ["Microsoft 365", "Azure Cloud Services", "Windows Server", "Dynamics 365"],
     partnership:
       "Our Microsoft partnership enables us to deliver powerful productivity and cloud solutions that transform how businesses operate.",
@@ -170,7 +192,7 @@ const partnersData: Record<
     description: "Cybersecurity leader providing next-generation firewall and cloud security.",
     logo: "/images/partners/paloalto-logo.png",
     website: "https://www.paloaltonetworks.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=fABJuCYMAyY",
     solutions: ["Next-Generation Firewalls", "Cloud Security", "Threat Intelligence", "Security Operations"],
     partnership:
       "Palo Alto Networks advanced security solutions protect your network and cloud infrastructure from sophisticated cyber threats.",
@@ -186,7 +208,7 @@ const partnersData: Record<
     description: "Open platform video management software for IP video surveillance.",
     logo: "/images/partners/milestone-logo.png",
     website: "https://www.milestonesys.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=mICW-oLDk2M",
     solutions: ["XProtect VMS", "Video Analytics", "Camera Integration", "Mobile Client Solutions"],
     partnership:
       "Through Milestone partnership, we provide flexible and scalable video management solutions that work with hundreds of camera types.",
@@ -197,7 +219,7 @@ const partnersData: Record<
     description: "Professional IP surveillance solutions with high-quality network cameras.",
     logo: "/images/partners/vivotek-logo.png",
     website: "https://www.vivotek.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=kKHg74uBg1Q",
     solutions: ["Network Cameras", "Video Servers", "Recording Solutions", "Software Integration"],
     partnership:
       "Vivotek collaboration enables us to offer cost-effective IP surveillance solutions with professional-grade features.",
@@ -208,7 +230,7 @@ const partnersData: Record<
     description: "Innovative security camera systems for home and business applications.",
     logo: "/images/partners/reolink-logo.png",
     website: "https://www.reolink.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=IkRMhWVlFp8",
     solutions: ["PoE Camera Systems", "Wireless Security Cameras", "NVR Solutions", "Solar-Powered Cameras"],
     partnership:
       "Our partnership with Reolink provides accessible and reliable security solutions for small to medium-sized businesses.",
@@ -219,7 +241,7 @@ const partnersData: Record<
     description: "Global leader in cybersecurity solutions and unified threat management.",
     logo: "/images/partners/fortinet-logo.png",
     website: "https://www.fortinet.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=o0btrmZcmGI",
     solutions: ["FortiGate Firewalls", "Secure SD-WAN", "Endpoint Security", "Security Fabric"],
     partnership:
       "Fortinet partnership delivers comprehensive cybersecurity solutions that protect your network with industry-leading threat protection.",
@@ -235,7 +257,7 @@ const partnersData: Record<
     description: "Global specialist in energy management and industrial automation.",
     logo: "/images/partners/schneider-electric-logo.png",
     website: "https://www.se.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=mfWWvpEa3Us",
     solutions: ["UPS Systems", "Power Distribution", "Data Center Infrastructure", "Building Automation"],
     partnership:
       "Through Schneider Electric, we provide reliable power management and automation solutions for critical infrastructure.",
@@ -246,7 +268,7 @@ const partnersData: Record<
     description: "Leading IT distributor and solutions aggregator for technology ecosystem.",
     logo: "/images/partners/td-synnex-logo.png",
     website: "https://www.tdsynnex.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=DOosZShL-w0",
     solutions: ["Technology Distribution", "Cloud Services", "Endpoint Solutions", "Business Process Services"],
     partnership:
       "Our alliance with TD SYNNEX provides access to comprehensive technology solutions and value-added services for our clients.",
@@ -257,7 +279,7 @@ const partnersData: Record<
     description: "Global technology leader in computing, storage, and infrastructure solutions.",
     logo: "/images/partners/dell-technologies-logo.png",
     website: "https://www.delltechnologies.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=X0pZDGMKhsk",
     solutions: ["PowerEdge Servers", "Storage Solutions", "Networking Equipment", "Workstations"],
     partnership:
       "Dell Technologies partnership enables us to deliver enterprise-grade infrastructure solutions backed by world-class support.",
@@ -277,18 +299,16 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [])
 
-  const handleBackToPartners = () => {
-    router.push("/?scrollTo=partners")
-  }
-
   return (
     <>
       <Header />
       <main className="min-h-screen pt-20">
         <div className="container mx-auto px-4 py-16">
-          <Button onClick={handleBackToPartners} variant="ghost" className="mb-8">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Partners
+          <Button asChild variant="ghost" className="mb-8">
+            <Link href="/partners">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Partners
+            </Link>
           </Button>
 
           <div className="max-w-4xl mx-auto">
@@ -317,9 +337,14 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
             <div className="mb-12">
               <h2 className="text-3xl font-bold mb-6">Partner Overview</h2>
               {partner.videoUrl ? (
-                <VideoEmbed url={partner.videoUrl} title={`${partner.name} Overview Video`} />
+                <>
+                  <VideoEmbed url={partner.videoUrl} title={`${partner.name} Overview Video`} />
+                  <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                    Video content courtesy of {partner.name}. All trademarks belong to their respective owners.
+                  </p>
+                </>
               ) : (
-                <div className="bg-muted/50 rounded-lg border-2 border-dashed border-border p-12 text-center">
+                <div className="bg-muted/50 rounded-lg border-2 border-dashed border-border p-12 text-center aspect-video flex flex-col items-center justify-center max-w-3xl mx-auto">
                   <p className="text-muted-foreground text-lg">Video content coming soon</p>
                   <p className="text-sm text-muted-foreground mt-2">
                     Check back later for an overview video from {partner.name}
@@ -362,14 +387,14 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
               </div>
             </div>
 
-            {/* CTA */}
+            {/* CTA - Updated to link to /contact */}
             <div className="mt-12 text-center p-8 bg-primary/10 rounded-lg">
               <h3 className="text-2xl font-bold mb-4">Interested in these solutions?</h3>
               <p className="text-lg text-muted-foreground mb-6">
                 Contact us to learn how we can leverage our partnership with {partner.name} to benefit your business.
               </p>
-              <Button size="lg" onClick={() => router.push("/?scrollTo=contact")}>
-                Get Started
+              <Button asChild size="lg">
+                <Link href="/contact">Get Started</Link>
               </Button>
             </div>
           </div>
