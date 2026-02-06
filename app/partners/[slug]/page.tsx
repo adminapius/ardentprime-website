@@ -86,7 +86,7 @@ const partnersData: Record<
     description: "Industry leader in security camera systems and video surveillance solutions.",
     logo: "/images/partners/pelco-logo.png",
     website: "https://www.pelco.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=B_lw-lMvQnU",
     solutions: ["IP Security Cameras", "Video Management Systems", "Analytics Software", "PTZ Camera Systems"],
     partnership:
       "Through our partnership with Pelco, we provide comprehensive video surveillance solutions to protect your facilities and assets with cutting-edge technology.",
