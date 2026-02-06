@@ -1,16 +1,19 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +22,16 @@ export function Header() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault()
+    setIsMobileMenuOpen(false)
+    if (pathname === href) {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } else {
+      router.push(href)
+    }
+  }
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -61,6 +74,7 @@ export function Header() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
                 className={`text-base font-semibold transition-colors ${
                   isActive(item.href) ? "text-primary" : "text-foreground hover:text-primary"
                 }`}
@@ -94,7 +108,7 @@ export function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className={`text-base font-semibold transition-colors py-2 ${
                     isActive(item.href) ? "text-primary" : "text-foreground hover:text-primary"
                   }`}

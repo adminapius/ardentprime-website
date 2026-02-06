@@ -71,7 +71,15 @@ export function Footer() {
         <div className="flex flex-col lg:flex-row justify-center items-start gap-12 lg:gap-16 mb-8 max-w-7xl mx-auto">
           {/* Logo Section - Left Most */}
           <div className="lg:mr-auto">
-            <Link href="/" className="block">
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault()
+                window.scrollTo({ top: 0, behavior: "instant" })
+                window.location.href = "/"
+              }}
+              className="block cursor-pointer"
+            >
               <div className="relative h-12 w-48 mb-6">
                 <Image
                   src="/images/company-logo.png"
@@ -80,7 +88,7 @@ export function Footer() {
                   className="object-contain object-left"
                 />
               </div>
-            </Link>
+            </a>
             <p className="text-secondary-foreground/80 leading-relaxed max-w-xs">
               Your trusted partner for comprehensive IT solutions. We transform businesses through innovative technology
               and exceptional service.
