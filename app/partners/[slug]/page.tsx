@@ -268,7 +268,7 @@ const partnersData: Record<
     description: "Leading IT distributor and solutions aggregator for technology ecosystem.",
     logo: "/images/partners/td-synnex-logo.png",
     website: "https://www.tdsynnex.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=DOosZShL-w0",
     solutions: ["Technology Distribution", "Cloud Services", "Endpoint Solutions", "Business Process Services"],
     partnership:
       "Our alliance with TD SYNNEX provides access to comprehensive technology solutions and value-added services for our clients.",
