@@ -65,7 +65,7 @@ const partnersData: Record<
     description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
     logo: "/images/partners/sectigo-logo.jpg",
     website: "https://www.sectigo.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=X5K6i5r7gz0",
     solutions: [
       "SSL/TLS Certificates",
       "Automated Certificate Management",
