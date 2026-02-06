@@ -279,7 +279,7 @@ const partnersData: Record<
     description: "Global technology leader in computing, storage, and infrastructure solutions.",
     logo: "/images/partners/dell-technologies-logo.png",
     website: "https://www.delltechnologies.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=X0pZDGMKhsk",
     solutions: ["PowerEdge Servers", "Storage Solutions", "Networking Equipment", "Workstations"],
     partnership:
       "Dell Technologies partnership enables us to deliver enterprise-grade infrastructure solutions backed by world-class support.",
