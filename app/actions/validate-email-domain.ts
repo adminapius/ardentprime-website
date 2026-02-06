@@ -1,8 +1,8 @@
 "use server"
 
-import { promises as dns } from "dns"
-
-export async function validateEmailDomain(email: string): Promise<{ valid: boolean; error?: string }> {
+export async function validateEmailDomain(
+  email: string
+): Promise<{ valid: boolean; error?: string }> {
   try {
     const [, domain] = email.split("@")
     if (!domain) {
@@ -11,21 +11,34 @@ export async function validateEmailDomain(email: string): Promise<{ valid: boole
 
     const domainLower = domain.toLowerCase()
 
-    // Try MX record lookup first
+    // Use Google DNS-over-HTTPS API to check MX records
     try {
-      const mxRecords = await dns.resolveMx(domainLower)
-      if (mxRecords && mxRecords.length > 0) {
-        return { valid: true }
+      const mxResponse = await fetch(
+        `https://dns.google/resolve?name=${encodeURIComponent(domainLower)}&type=MX`,
+        { signal: AbortSignal.timeout(5000) }
+      )
+      if (mxResponse.ok) {
+        const mxData = await mxResponse.json()
+        // Status 0 = NOERROR, Answer array contains records
+        if (mxData.Status === 0 && mxData.Answer && mxData.Answer.length > 0) {
+          return { valid: true }
+        }
       }
     } catch {
       // MX lookup failed, try A record as fallback
     }
 
-    // Fallback: try A record lookup (some domains accept email without MX records)
+    // Fallback: check A record (some domains accept email without MX records)
     try {
-      const aRecords = await dns.resolve4(domainLower)
-      if (aRecords && aRecords.length > 0) {
-        return { valid: true }
+      const aResponse = await fetch(
+        `https://dns.google/resolve?name=${encodeURIComponent(domainLower)}&type=A`,
+        { signal: AbortSignal.timeout(5000) }
+      )
+      if (aResponse.ok) {
+        const aData = await aResponse.json()
+        if (aData.Status === 0 && aData.Answer && aData.Answer.length > 0) {
+          return { valid: true }
+        }
       }
     } catch {
       // A record lookup also failed
@@ -33,7 +46,8 @@ export async function validateEmailDomain(email: string): Promise<{ valid: boole
 
     return {
       valid: false,
-      error: "This email domain does not appear to exist. Please enter a valid email address.",
+      error:
+        "This email domain does not appear to exist. Please enter a valid email address.",
     }
   } catch {
     // If DNS lookup fails entirely, allow it through (don't block legitimate users)
