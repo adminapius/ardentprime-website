@@ -176,7 +176,7 @@ const partnersData: Record<
     description: "Leading technology company providing cloud, productivity, and AI solutions.",
     logo: "/images/partners/microsoft-logo.png",
     website: "https://www.microsoft.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=1aXrgLlqdbg",
     solutions: ["Microsoft 365", "Azure Cloud Services", "Windows Server", "Dynamics 365"],
     partnership:
       "Our Microsoft partnership enables us to deliver powerful productivity and cloud solutions that transform how businesses operate.",
