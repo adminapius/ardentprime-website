@@ -192,7 +192,7 @@ const partnersData: Record<
     description: "Cybersecurity leader providing next-generation firewall and cloud security.",
     logo: "/images/partners/paloalto-logo.png",
     website: "https://www.paloaltonetworks.com",
-    videoUrl: "https://www.youtube.com/watch?v=GVC9hXaT7TU",
+    videoUrl: "https://www.youtube.com/watch?v=fABJuCYMAyY",
     solutions: ["Next-Generation Firewalls", "Cloud Security", "Threat Intelligence", "Security Operations"],
     partnership:
       "Palo Alto Networks advanced security solutions protect your network and cloud infrastructure from sophisticated cyber threats.",
