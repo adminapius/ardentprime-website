@@ -139,7 +139,7 @@ const partnersData: Record<
     description: "Trusted provider of mission-critical communication and security solutions.",
     logo: "/images/partners/motorola-solutions-logo.png",
     website: "https://www.motorolasolutions.com",
-    videoUrl: "",
+    videoUrl: "https://youtu.be/AGmoQOVSPkE?si=oWxuq0Ji9D7Wduzr",
     solutions: [
       "Two-Way Radio Systems",
       "Video Security Solutions",
