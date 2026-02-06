@@ -102,7 +102,7 @@ const partnersData: Record<
     description: "Advanced AI-powered video security and analytics solutions provider.",
     logo: "/images/partners/avigilon-logo.png",
     website: "https://www.avigilon.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=_4OWxx9RTPw",
     solutions: [
       "AI-Powered Video Analytics",
       "High-Definition Cameras",
