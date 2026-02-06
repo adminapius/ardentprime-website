@@ -123,7 +123,7 @@ const partnersData: Record<
     description: "Global leader in network video and access control solutions.",
     logo: "/images/partners/axis-logo.png",
     website: "https://www.axis.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=FnQasRVqI34",
     solutions: ["Network Cameras", "Video Encoders", "Access Control Systems", "Audio Systems"],
     partnership:
       "Our alliance with Axis brings enterprise-grade network video solutions that provide exceptional image quality and reliability.",
