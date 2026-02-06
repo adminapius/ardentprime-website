@@ -49,7 +49,7 @@ const partnersData: Record<
     description: "World's largest technology distributor and supply chain solutions provider.",
     logo: "/images/partners/ingram-micro-logo.png",
     website: "https://www.ingrammicro.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=BejEZFMMBJk",
     solutions: ["Technology Distribution", "Supply Chain Services", "Cloud Solutions", "Lifecycle Services"],
     partnership:
       "Our strategic partnership with Ingram Micro ensures we have access to a comprehensive portfolio of technology products and services to meet all client needs.",
