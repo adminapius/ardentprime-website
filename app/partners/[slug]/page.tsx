@@ -241,7 +241,7 @@ const partnersData: Record<
     description: "Global leader in cybersecurity solutions and unified threat management.",
     logo: "/images/partners/fortinet-logo.png",
     website: "https://www.fortinet.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=o0btrmZcmGI",
     solutions: ["FortiGate Firewalls", "Secure SD-WAN", "Endpoint Security", "Security Fabric"],
     partnership:
       "Fortinet partnership delivers comprehensive cybersecurity solutions that protect your network with industry-leading threat protection.",
