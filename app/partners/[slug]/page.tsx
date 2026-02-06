@@ -257,7 +257,7 @@ const partnersData: Record<
     description: "Global specialist in energy management and industrial automation.",
     logo: "/images/partners/schneider-electric-logo.png",
     website: "https://www.se.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=mfWWvpEa3Us",
     solutions: ["UPS Systems", "Power Distribution", "Data Center Infrastructure", "Building Automation"],
     partnership:
       "Through Schneider Electric, we provide reliable power management and automation solutions for critical infrastructure.",
