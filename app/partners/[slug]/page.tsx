@@ -160,7 +160,7 @@ const partnersData: Record<
     description: "Global technology leader in networking, security, and collaboration.",
     logo: "/images/partners/cisco-logo.png",
     website: "https://www.cisco.com",
-    videoUrl: "",
+    videoUrl: "https://youtube.com/shorts/QLf1QqqaShg?si=3Oy0K35XxY_FIc9H",
     solutions: ["Network Infrastructure", "Cybersecurity Solutions", "Collaboration Tools", "Data Center Technologies"],
     partnership:
       "Together with Cisco, we offer comprehensive networking and security solutions that form the backbone of modern IT infrastructure.",
