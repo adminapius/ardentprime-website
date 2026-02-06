@@ -208,7 +208,7 @@ const partnersData: Record<
     description: "Open platform video management software for IP video surveillance.",
     logo: "/images/partners/milestone-logo.png",
     website: "https://www.milestonesys.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=mICW-oLDk2M",
     solutions: ["XProtect VMS", "Video Analytics", "Camera Integration", "Mobile Client Solutions"],
     partnership:
       "Through Milestone partnership, we provide flexible and scalable video management solutions that work with hundreds of camera types.",
