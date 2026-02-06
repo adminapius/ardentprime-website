@@ -219,7 +219,7 @@ const partnersData: Record<
     description: "Professional IP surveillance solutions with high-quality network cameras.",
     logo: "/images/partners/vivotek-logo.png",
     website: "https://www.vivotek.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=kKHg74uBg1Q",
     solutions: ["Network Cameras", "Video Servers", "Recording Solutions", "Software Integration"],
     partnership:
       "Vivotek collaboration enables us to offer cost-effective IP surveillance solutions with professional-grade features.",
