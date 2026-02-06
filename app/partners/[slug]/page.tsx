@@ -155,7 +155,27 @@ const partnersData: Record<
       "Proven track record",
     ],
   },
-  cisco: {
+import Script from "next/script";
+
+export default function PartnerPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+
+  return (
+    <>
+      {slug === "cisco" && (
+        <>
+          <Script
+            src="https://widgets.ziftsolutions.com/cisco.ziftsolutions.com/js/8a99834d9c33aa73019c341ceef31877"
+            strategy="afterInteractive"
+          />
+          <div
+            className="zift_plugin"
+            id="8a99834d9c33aa73019c341ceef31877"
+          ></div>
+        </>
+      )}
+
+        cisco: {
     name: "Cisco",
     description: "Global technology leader in networking, security, and collaboration.",
     logo: "/images/partners/cisco-logo.png",
@@ -171,6 +191,10 @@ const partnersData: Record<
       "Global support network",
     ],
   },
+    </>
+  );
+}
+
   microsoft: {
     name: "Microsoft",
     description: "Leading technology company providing cloud, productivity, and AI solutions.",
