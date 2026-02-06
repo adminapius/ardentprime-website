@@ -230,7 +230,7 @@ const partnersData: Record<
     description: "Innovative security camera systems for home and business applications.",
     logo: "/images/partners/reolink-logo.png",
     website: "https://www.reolink.com",
-    videoUrl: "",
+    videoUrl: "https://www.youtube.com/watch?v=IkRMhWVlFp8",
     solutions: ["PoE Camera Systems", "Wireless Security Cameras", "NVR Solutions", "Solar-Powered Cameras"],
     partnership:
       "Our partnership with Reolink provides accessible and reliable security solutions for small to medium-sized businesses.",
