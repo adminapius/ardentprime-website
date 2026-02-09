@@ -63,7 +63,7 @@ const partnersData: Record<
   sectigo: {
     name: "Sectigo",
     description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
-    logo: "/images/partners/sectigo-logo.jpg",
+    logo: "/images/partners/sectigo-logo.png",
     website: "https://www.sectigo.com",
     videoUrl: "https://www.youtube.com/watch?v=X5K6i5r7gz0",
     solutions: [

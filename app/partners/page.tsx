@@ -30,7 +30,7 @@ const partners = [
   {
     id: 3,
     name: "Sectigo",
-    logo: `/images/partners/sectigo-logo.jpg`,
+    logo: `/images/partners/sectigo-logo.png`,
     slug: "sectigo",
     description: "Global leader in SSL/TLS certificates and web security.",
   },
