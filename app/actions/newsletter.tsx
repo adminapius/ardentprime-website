@@ -3,9 +3,21 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text()
+    throw new Error(`Resend API error: ${res.status} ${errorBody}`)
+  }
+  return res.json()
+}
 
 const MAX_EMAIL = 100
 
@@ -50,7 +62,7 @@ export async function subscribeToNewsletter(email: string) {
 
     // Send welcome email
     try {
-      await resend.emails.send({
+      await sendEmail({
         from: "Ardent Prime Innovations <no-reply@ardentprime.com>",
         to: [email],
         subject: "Welcome to Ardent Prime Newsletter!",
