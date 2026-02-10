@@ -170,6 +170,7 @@ const partnersData: Record<
       "Scalable architecture",
       "Global support network",
     ],
+    
   },
   microsoft: {
     name: "Microsoft",
