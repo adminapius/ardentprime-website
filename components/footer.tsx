@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, Linkedin, Twitter, Instagram } from "lucide-react"
 import { subscribeToNewsletter } from "@/app/actions/newsletter"
 import { validateEmail } from "@/lib/email-validator"
 
@@ -189,6 +189,35 @@ export function Footer() {
               <h4 className="font-semibold mb-2">Contact Info</h4>
               <p className="text-sm text-secondary-foreground/80">info@ardentprime.com</p>
               <p className="text-sm text-secondary-foreground/80">+1 (219) 999-2867</p>
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+              <a
+                href="https://www.linkedin.com/company/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a
+                href="https://x.com/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="X (Twitter)"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a
+                href="https://www.instagram.com/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
             </div>
           </div>
         </div>

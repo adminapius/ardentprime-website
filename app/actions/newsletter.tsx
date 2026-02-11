@@ -87,7 +87,7 @@ export async function subscribeToNewsletter(email: string) {
 <br/>
 <p>Welcome aboard,</p>
 <p><strong>The <span style="background-color: #fff3a8;">ARDENT PRIME</span> Team</strong><br/>
-<a href="mailto:info@ardentprime.com" style="color: #1a73e8;">info@ardentprime.com</a></p>
+<a href="https://www.ardentprime.com/contact" style="color: #1a73e8;">www.ardentprime.com/contact</a></p>
 </div>`,
       })
     } catch (emailError) {
