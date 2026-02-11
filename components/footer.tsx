@@ -93,6 +93,35 @@ export function Footer() {
               Your trusted partner for comprehensive IT solutions. We transform businesses through innovative technology
               and exceptional service.
             </p>
+            <div className="mt-4 flex items-center gap-4">
+              <a
+                href="https://www.linkedin.com/company/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a
+                href="https://x.com/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="X (Twitter)"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a
+                href="https://www.instagram.com/ardentprime"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
+            </div>
           </div>
 
           {/* Company Links - Updated to use Link */}
@@ -189,35 +218,6 @@ export function Footer() {
               <h4 className="font-semibold mb-2">Contact Info</h4>
               <p className="text-sm text-secondary-foreground/80">info@ardentprime.com</p>
               <p className="text-sm text-secondary-foreground/80">+1 (219) 999-2867</p>
-            </div>
-            <div className="mt-4 flex items-center gap-4">
-              <a
-                href="https://www.linkedin.com/company/ardentprime"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="h-5 w-5" />
-              </a>
-              <a
-                href="https://x.com/ardentprime"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
-                aria-label="X (Twitter)"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.instagram.com/ardentprime"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
             </div>
           </div>
         </div>
