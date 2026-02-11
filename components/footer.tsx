@@ -93,7 +93,7 @@ export function Footer() {
               Your trusted partner for comprehensive IT solutions. We transform businesses through innovative technology
               and exceptional service.
             </p>
-            <div className="mt-4 flex items-center gap-4">
+            <div className="mt-8 flex items-center gap-4">
               <a
                 href="https://www.linkedin.com/company/ardentprime"
                 target="_blank"
