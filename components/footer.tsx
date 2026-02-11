@@ -95,7 +95,7 @@ export function Footer() {
             </p>
             <div className="mt-8 flex items-center gap-4">
               <a
-                href="https://www.linkedin.com/company/ardentprime"
+                href="https://www.linkedin.com/company/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-secondary-foreground/60 hover:text-primary transition-colors"
@@ -104,7 +104,7 @@ export function Footer() {
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
-                href="https://x.com/ardentprime"
+                href="https://x.com/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-secondary-foreground/60 hover:text-primary transition-colors"
@@ -113,7 +113,7 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="https://www.instagram.com/ardentprime"
+                href="https://www.instagram.com/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-secondary-foreground/60 hover:text-primary transition-colors"
