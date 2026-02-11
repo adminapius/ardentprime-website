@@ -140,26 +140,26 @@ export async function submitContactForm(formData: {
 
     try {
       await sendEmail({
-        from: "Ardent Prime Website <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME <no-reply@ardentprime.com>",
         to: ["info@ardentprime.com"],
-        subject: `New Contact Form Inquiry - ${serviceName}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0a0a0a; border-bottom: 2px solid #c8102e; padding-bottom: 10px;">New Contact Form Submission</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Full Name:</td><td style="padding: 8px 0;">${formData.fullName}</td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Email:</td><td style="padding: 8px 0;"><a href="mailto:${formData.email}">${formData.email}</a></td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Phone:</td><td style="padding: 8px 0;"><a href="tel:${formData.phone}">${formData.phone}</a></td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Company:</td><td style="padding: 8px 0;">${formData.company || "Not provided"}</td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Service Interest:</td><td style="padding: 8px 0;">${serviceName}</td></tr>
-            </table>
-            <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
-              <p style="font-weight: bold; color: #555; margin: 0 0 8px 0;">Message:</p>
-              <p style="margin: 0; color: #333;">${formData.message}</p>
-            </div>
-            <p style="margin-top: 16px; font-size: 12px; color: #999;">This submission was sent from the Ardent Prime website contact form.</p>
-          </div>
-        `,
+        subject: `[ArdentPrime] New Contact Inquiry - ${serviceName}`,
+        html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+<p><strong>New contact form submission received:</strong></p>
+
+<table style="border-collapse: collapse; margin: 16px 0;">
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.fullName}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company || "Not provided"}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Service:</td><td style="padding: 4px 0;">${serviceName}</td></tr>
+</table>
+
+<p><strong>Message:</strong></p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
+
+<br/>
+<p style="font-size: 12px; color: #999;">Sent from the Ardent Prime website contact form.</p>
+</div>`,
       })
     } catch (emailError) {
       console.error("Failed to send notification email:", emailError)
