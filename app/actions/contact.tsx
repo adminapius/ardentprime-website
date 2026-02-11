@@ -141,8 +141,8 @@ export async function submitContactForm(formData: {
     try {
       await sendEmail({
         from: "ARDENT PRIME <no-reply@ardentprime.com>",
-        to: ["info@ardentprime.com"],
-        subject: `[ArdentPrime] New Contact Inquiry - ${serviceName}`,
+        to: ["sales@ardentprime.com"],
+        subject: `[ArdentPrime Sales] New Contact Inquiry - ${serviceName}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
 <p><strong>New contact form submission received:</strong></p>
 

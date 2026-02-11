@@ -147,54 +147,57 @@ export async function submitSupportTicket(formData: {
     try {
       // Email to support team
       await sendEmail({
-        from: "Ardent Prime Support <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME Support <no-reply@ardentprime.com>",
         to: ["support@ardentprime.com"],
-        subject: `[${formData.priority.toUpperCase()}] Support Ticket: ${formData.subject}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0a0a0a; border-bottom: 2px solid #c8102e; padding-bottom: 10px;">New Support Ticket</h2>
-            <div style="display: inline-block; padding: 4px 12px; border-radius: 4px; background: ${priorityColors[formData.priority] || "#999"}; color: white; font-weight: bold; font-size: 14px; margin-bottom: 16px;">
-              ${priorityLabels[formData.priority] || formData.priority}
-            </div>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Company:</td><td style="padding: 8px 0;">${formData.company}</td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Name:</td><td style="padding: 8px 0;">${formData.firstName} ${formData.lastName}</td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Email:</td><td style="padding: 8px 0;"><a href="mailto:${formData.email}">${formData.email}</a></td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Phone:</td><td style="padding: 8px 0;"><a href="tel:${formData.phone}">${formData.phone}</a></td></tr>
-              <tr><td style="padding: 8px 0; font-weight: bold; color: #555;">Subject:</td><td style="padding: 8px 0;">${formData.subject}</td></tr>
-            </table>
-            <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
-              <p style="font-weight: bold; color: #555; margin: 0 0 8px 0;">Description:</p>
-              <p style="margin: 0; color: #333;">${formData.message}</p>
-            </div>
-            <p style="margin-top: 16px; font-size: 12px; color: #999;">This ticket was submitted from the Ardent Prime Support Center.</p>
-          </div>
-        `,
+        subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject}`,
+        html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+<p><strong>New support ticket received:</strong></p>
+
+<table style="border-collapse: collapse; margin: 16px 0;">
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;"><span style="color: ${priorityColors[formData.priority] || "#555"}; font-weight: bold;">${priorityLabels[formData.priority] || formData.priority}</span></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.firstName} ${formData.lastName}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
+</table>
+
+<p><strong>Message:</strong></p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid ${priorityColors[formData.priority] || "#1a73e8"};">${formData.message}</p>
+
+<br/>
+<p style="font-size: 12px; color: #999;">Submitted from the Ardent Prime Support Center.</p>
+</div>`,
       })
 
       // Confirmation email to the client
       await sendEmail({
-        from: "Ardent Prime Support <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME Support <no-reply@ardentprime.com>",
         to: [formData.email],
         subject: `Support Ticket Received - ${formData.subject}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0a0a0a; border-bottom: 2px solid #c8102e; padding-bottom: 10px;">Support Ticket Confirmation</h2>
-            <p>Dear ${formData.firstName},</p>
-            <p>Thank you for contacting Ardent Prime Innovations support. We have received your ticket and our team will respond within 24 hours.</p>
-            <div style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
-              <p style="margin: 0 0 4px 0;"><strong>Subject:</strong> ${formData.subject}</p>
-              <p style="margin: 0 0 4px 0;"><strong>Priority:</strong> ${priorityLabels[formData.priority] || formData.priority}</p>
-              <p style="margin: 0;"><strong>Company:</strong> ${formData.company}</p>
-            </div>
-            <p style="margin-top: 16px;">For urgent matters, you can also reach us at:</p>
-            <ul>
-              <li>Phone: +1 (219) 999-2867</li>
-              <li>Email: support@ardentprime.com</li>
-            </ul>
-            <p style="margin-top: 16px; font-size: 12px; color: #999;">This is an automated confirmation. Please do not reply to this email.</p>
-          </div>
-        `,
+        html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+<p>Hi ${formData.firstName},</p>
+
+<p>Thank you for contacting <strong><span style="background-color: #fff3a8;">ARDENT PRIME</span></strong> support. We have received your ticket and our team will respond within 24 hours.</p>
+
+<p><strong>Your ticket details:</strong></p>
+<table style="border-collapse: collapse; margin: 8px 0 16px;">
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;">${priorityLabels[formData.priority] || formData.priority}</td></tr>
+</table>
+
+<p><strong>Your message:</strong></p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
+
+<p style="margin-top: 20px;">For urgent matters, you can also reach us at:<br/>
+Phone: +1 (219) 999-2867</p>
+
+<br/>
+<p>The <strong><span style="background-color: #fff3a8;">ARDENT PRIME</span> Support Team</strong><br/>
+<a href="https://www.ardentprime.com/support-center" style="color: #1a73e8;">www.ardentprime.com/support-center</a></p>
+
+<p style="font-size: 12px; color: #999;">This is an automated confirmation. Please do not reply to this email.</p>
+</div>`,
       })
     } catch (emailError) {
       console.error("Failed to send support emails:", emailError)
