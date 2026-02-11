@@ -4,9 +4,22 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail, validateFullName } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
 import { checkContactRateLimit, getSubmissionIP } from "@/app/actions/rate-limit"
-import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text()
+    throw new Error(`Resend API error: ${res.status} ${errorBody}`)
+  }
+  return res.json()
+}
 
 const MAX_FULL_NAME = 100
 const MAX_EMAIL = 100
@@ -126,7 +139,7 @@ export async function submitContactForm(formData: {
     const serviceName = serviceLabels[formData.serviceInterest || ""] || formData.serviceInterest || "Not specified"
 
     try {
-      await resend.emails.send({
+      await sendEmail({
         from: "Ardent Prime Website <no-reply@ardentprime.com>",
         to: ["info@ardentprime.com"],
         subject: `New Contact Form Inquiry - ${serviceName}`,

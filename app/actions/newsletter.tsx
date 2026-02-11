@@ -3,9 +3,21 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text()
+    throw new Error(`Resend API error: ${res.status} ${errorBody}`)
+  }
+  return res.json()
+}
 
 const MAX_EMAIL = 100
 
@@ -49,27 +61,34 @@ export async function subscribeToNewsletter(email: string) {
     }
 
     // Send welcome email
+    const username = email.split("@")[0]
     try {
-      await resend.emails.send({
-        from: "Ardent Prime Innovations <no-reply@ardentprime.com>",
+      await sendEmail({
+        from: "ARDENT PRIME <no-reply@ardentprime.com>",
         to: [email],
-        subject: "Welcome to Ardent Prime Newsletter!",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #0a0a0a; border-bottom: 2px solid #c8102e; padding-bottom: 10px;">Welcome to Ardent Prime Innovations!</h2>
-            <p>Thank you for subscribing to our newsletter.</p>
-            <p>You'll receive the latest updates on:</p>
-            <ul>
-              <li>Technology insights and trends</li>
-              <li>Cybersecurity advisories</li>
-              <li>Product announcements from our partners</li>
-              <li>IT best practices and tips</li>
-            </ul>
-            <p>Stay tuned for our next update!</p>
-            <p style="margin-top: 24px;">Best regards,<br/>The Ardent Prime Innovations Team</p>
-            <p style="margin-top: 16px; font-size: 12px; color: #999;">Ardent Prime Innovations LLC | Sacramento, CA</p>
-          </div>
-        `,
+        subject: "Welcome to ARDENT PRIME \u2013 You\u2019re officially on the list \uD83D\uDEE1\uFE0F - You\u2019re on our radar now \u2014 updates, insights & innovations coming your way.",
+        html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+<p>Hi ${username},</p>
+
+<p>Thanks for subscribing to <strong><span style="background-color: #fff3a8;">ARDENT PRIME</span> INNOVATIONS LLC</strong>.</p>
+
+<p>We'll keep you updated on:</p>
+
+<ul style="padding-left: 20px; margin: 12px 0;">
+  <li style="margin-bottom: 6px;">\uD83D\uDCA1 New product launches &amp; innovations</li>
+  <li style="margin-bottom: 6px;">\uD83D\uDEE0\uFE0F Platform upgrades, security improvements, and engineering insights</li>
+  <li style="margin-bottom: 6px;">\uD83D\uDCE2 Industry highlights, company news, and special announcements</li>
+</ul>
+
+<p>No fluff. No spam. Just the good stuff, delivered straight to your inbox.</p>
+
+<p>Want to manage your preferences or unsubscribe? You'll always find the link in our footer.</p>
+
+<br/>
+<p>Welcome aboard,</p>
+<p><strong>The <span style="background-color: #fff3a8;">ARDENT PRIME</span> Team</strong><br/>
+<a href="mailto:info@ardentprime.com" style="color: #1a73e8;">info@ardentprime.com</a></p>
+</div>`,
       })
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError)

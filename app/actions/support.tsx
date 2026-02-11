@@ -3,9 +3,21 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const errorBody = await res.text()
+    throw new Error(`Resend API error: ${res.status} ${errorBody}`)
+  }
+  return res.json()
+}
 
 const MAX_COMPANY_NAME = 100
 const MAX_FIRST_NAME = 50
@@ -134,7 +146,7 @@ export async function submitSupportTicket(formData: {
 
     try {
       // Email to support team
-      await resend.emails.send({
+      await sendEmail({
         from: "Ardent Prime Support <no-reply@ardentprime.com>",
         to: ["support@ardentprime.com"],
         subject: `[${formData.priority.toUpperCase()}] Support Ticket: ${formData.subject}`,
@@ -161,7 +173,7 @@ export async function submitSupportTicket(formData: {
       })
 
       // Confirmation email to the client
-      await resend.emails.send({
+      await sendEmail({
         from: "Ardent Prime Support <no-reply@ardentprime.com>",
         to: [formData.email],
         subject: `Support Ticket Received - ${formData.subject}`,
