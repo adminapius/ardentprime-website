@@ -101,7 +101,7 @@ export function Footer() {
                 className="transition-opacity hover:opacity-80"
                 aria-label="LinkedIn"
               >
-                <Linkedin className="h-5 w-5" style={{ color: '#0A66C2' }} />
+                <Linkedin className="h-8 w-8" style={{ color: '#0A66C2' }} />
               </a>
               <a
                 href="https://x.com/ardentprimeinnovations"
@@ -110,7 +110,7 @@ export function Footer() {
                 className="transition-opacity hover:opacity-80"
                 aria-label="X (Twitter)"
               >
-                <Twitter className="h-5 w-5" style={{ color: '#1DA1F2' }} />
+                <Twitter className="h-8 w-8" style={{ color: '#1DA1F2' }} />
               </a>
               <a
                 href="https://www.instagram.com/ardentprimeinnovations"
@@ -119,7 +119,7 @@ export function Footer() {
                 className="transition-opacity hover:opacity-80"
                 aria-label="Instagram"
               >
-                <Instagram className="h-5 w-5" style={{ color: '#E4405F' }} />
+                <Instagram className="h-8 w-8" style={{ color: '#E4405F' }} />
               </a>
             </div>
           </div>
@@ -256,7 +256,7 @@ export function Footer() {
                   className="h-10 w-10 rounded-full shadow-lg hover:scale-110 transition-transform"
                   aria-label="Scroll to top"
                 >
-                  <ArrowUp className="h-5 w-5" />
+                  <ArrowUp className="h-8 w-8" />
                 </Button>
               )}
             </div>
