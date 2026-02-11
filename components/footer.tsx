@@ -98,28 +98,28 @@ export function Footer() {
                 href="https://www.linkedin.com/company/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                className="transition-opacity hover:opacity-80"
                 aria-label="LinkedIn"
               >
-                <Linkedin className="h-5 w-5" />
+                <Linkedin className="h-5 w-5" style={{ color: '#0A66C2' }} />
               </a>
               <a
                 href="https://x.com/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                className="transition-opacity hover:opacity-80"
                 aria-label="X (Twitter)"
               >
-                <Twitter className="h-5 w-5" />
+                <Twitter className="h-5 w-5" style={{ color: '#1DA1F2' }} />
               </a>
               <a
                 href="https://www.instagram.com/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-secondary-foreground/60 hover:text-primary transition-colors"
+                className="transition-opacity hover:opacity-80"
                 aria-label="Instagram"
               >
-                <Instagram className="h-5 w-5" />
+                <Instagram className="h-5 w-5" style={{ color: '#E4405F' }} />
               </a>
             </div>
           </div>
