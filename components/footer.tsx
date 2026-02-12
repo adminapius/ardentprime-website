@@ -256,7 +256,7 @@ export function Footer() {
                   className="h-10 w-10 rounded-full shadow-lg hover:scale-110 transition-transform"
                   aria-label="Scroll to top"
                 >
-                  <ArrowUp className="h-[30px] w-[30px]" />
+                  <ArrowUp className="h-5 w-5" />
                 </Button>
               )}
             </div>
