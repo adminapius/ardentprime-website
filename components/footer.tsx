@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, Linkedin, Twitter, Instagram } from "lucide-react"
 import { subscribeToNewsletter } from "@/app/actions/newsletter"
 import { validateEmail } from "@/lib/email-validator"
 
@@ -93,6 +93,35 @@ export function Footer() {
               Your trusted partner for comprehensive IT solutions. We transform businesses through innovative technology
               and exceptional service.
             </p>
+            <div className="mt-8 flex items-center gap-4">
+              <a
+                href="https://www.linkedin.com/company/ardentprimeinnovations"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-80"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-[30px] w-[30px]" style={{ color: '#0A66C2' }} />
+              </a>
+              <a
+                href="https://x.com/ardentprimeinnovations"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-80"
+                aria-label="X (Twitter)"
+              >
+                <Twitter className="h-[30px] w-[30px]" style={{ color: '#1DA1F2' }} />
+              </a>
+              <a
+                href="https://www.instagram.com/ardentprimeinnovations"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-80"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-[30px] w-[30px]" style={{ color: '#E4405F' }} />
+              </a>
+            </div>
           </div>
 
           {/* Company Links - Updated to use Link */}
@@ -227,7 +256,7 @@ export function Footer() {
                   className="h-10 w-10 rounded-full shadow-lg hover:scale-110 transition-transform"
                   aria-label="Scroll to top"
                 >
-                  <ArrowUp className="h-5 w-5" />
+                  <ArrowUp className="h-[30px] w-[30px]" />
                 </Button>
               )}
             </div>

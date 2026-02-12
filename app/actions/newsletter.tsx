@@ -64,7 +64,7 @@ export async function subscribeToNewsletter(email: string) {
     const username = email.split("@")[0]
     try {
       await sendEmail({
-        from: "ARDENT PRIME <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: [email],
         subject: "Welcome to ARDENT PRIME \u2013 You\u2019re officially on the list \uD83D\uDEE1\uFE0F - You\u2019re on our radar now \u2014 updates, insights & innovations coming your way.",
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
@@ -87,7 +87,7 @@ export async function subscribeToNewsletter(email: string) {
 <br/>
 <p>Welcome aboard,</p>
 <p><strong>The <span style="background-color: #fff3a8;">ARDENT PRIME</span> Team</strong><br/>
-<a href="mailto:info@ardentprime.com" style="color: #1a73e8;">info@ardentprime.com</a></p>
+<a href="https://www.ardentprime.com/contact" style="color: #1a73e8;">www.ardentprime.com/contact</a></p>
 </div>`,
       })
     } catch (emailError) {
