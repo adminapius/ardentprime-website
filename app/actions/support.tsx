@@ -119,7 +119,7 @@ export async function submitSupportTicket(formData: {
     }
 
     const { error } = await supabase.from("support_tickets").insert({
-      company_name: formData.company,
+      company_name: formData.company.trim().toUpperCase(),
       name: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
       phone: formData.phone,
