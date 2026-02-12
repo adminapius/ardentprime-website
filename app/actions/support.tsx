@@ -101,7 +101,7 @@ export async function submitSupportTicket(formData: {
     const { data: contractCustomers, error: searchError } = await supabase
       .from("contract_customers")
       .select("customer_id, company_name, status")
-      .ilike("company_name", `%${formData.company}%`)
+      .ilike("company_name", formData.company.trim())
       .eq("status", "active")
 
     if (searchError) {
@@ -114,7 +114,7 @@ export async function submitSupportTicket(formData: {
         success: false,
         error: "company_not_found",
         message:
-          "We couldn't find an active service contract associated with your information. Support tickets are exclusively available for clients with active service agreements. Interested in our services? Contact our sales team at sales@ardentprime.com - we'd love to help you get started!",
+          "Company not found. Please enter the full registered company name exactly as it appears in your contract with Ardent Prime.",
       }
     }
 
@@ -147,7 +147,7 @@ export async function submitSupportTicket(formData: {
     try {
       // Email to support team
       await sendEmail({
-        from: "ARDENT PRIME Support <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: ["support@ardentprime.com"],
         subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
@@ -172,7 +172,7 @@ export async function submitSupportTicket(formData: {
 
       // Confirmation email to the client
       await sendEmail({
-        from: "ARDENT PRIME Support <no-reply@ardentprime.com>",
+        from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: [formData.email],
         subject: `Support Ticket Received - ${formData.subject}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
