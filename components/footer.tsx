@@ -104,7 +104,7 @@ export function Footer() {
                 <Linkedin className="h-[30px] w-[30px]" style={{ color: '#0A66C2' }} />
               </a>
               <a
-                href="https://x.com/ardentprimeit"
+                href="https://x.com/ardentprimeinnovations"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-80"
