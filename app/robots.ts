@@ -8,7 +8,19 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/_next/"],
+        disallow: [
+          "/api/",
+          "/_next/",
+          "/scripts/",
+          "/*.sql",
+          "/*.json",
+          "/private/",
+        ],
+      },
+      // Block bad bots that scrape content
+      {
+        userAgent: ["AhrefsBot", "SemrushBot", "MJ12bot", "DotBot"],
+        disallow: "/",
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

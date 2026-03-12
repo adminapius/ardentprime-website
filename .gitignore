@@ -25,3 +25,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Database scripts - SECURITY: Do not expose schema to public repo
+/scripts/
