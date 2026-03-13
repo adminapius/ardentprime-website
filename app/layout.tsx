@@ -84,6 +84,16 @@ export const metadata: Metadata = {
     canonical: siteConfig.url,
   },
   category: "technology",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/site.webmanifest",
   verification: {
     // Add your verification codes here when you have them
     // google: "your-google-verification-code",

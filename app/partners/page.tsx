@@ -1,15 +1,25 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Our Partners | Ardent Prime Innovations LLC",
+  title: "Our Technology Partners",
   description:
     "Discover our trusted technology partners including HP, Cisco, Microsoft, Dell, and more. We collaborate with industry leaders to deliver exceptional IT solutions.",
-  keywords: "technology partners, HP partner, Cisco partner, Microsoft partner, Dell partner, IT partners",
+  keywords: ["technology partners", "HP partner", "Cisco partner", "Microsoft partner", "Dell partner", "IT partners", "Fortinet", "Palo Alto"],
+  openGraph: {
+    title: "Our Technology Partners - Ardent Prime Innovations LLC",
+    description: "Collaborating with industry leaders: HP, Cisco, Microsoft, Dell, Fortinet, and more.",
+    url: "https://ardentprime.com/partners",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/partners",
+  },
 }
 
 const partners = [
@@ -142,6 +152,7 @@ export default function PartnersPage() {
         {/* Hero Section */}
         <section className="py-24 bg-muted/30">
           <div className="container mx-auto px-4">
+            <Breadcrumb items={[{ label: "Partners" }]} className="mb-8" />
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Trusted Partners</h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

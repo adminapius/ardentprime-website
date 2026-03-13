@@ -1,15 +1,25 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Target, Eye, Award, Lightbulb, Users, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "About Us - Who We Are | Ardent Prime Innovations LLC",
+  title: "About Us - Who We Are",
   description:
     "Learn about Ardent Prime Innovations LLC - your trusted technology innovation partner. Discover our mission, vision, and core values that drive our commitment to excellence.",
-  keywords: "about ardent prime, IT company, technology partner, mission, vision, core values",
+  keywords: ["about ardent prime", "IT company", "technology partner", "mission", "vision", "core values", "enterprise IT", "Sacramento IT company"],
+  openGraph: {
+    title: "About Us - Ardent Prime Innovations LLC",
+    description: "Your trusted technology innovation partner. Discover our mission, vision, and core values.",
+    url: "https://ardentprime.com/about",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/about",
+  },
 }
 
 export default function AboutPage() {
@@ -20,6 +30,7 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="py-24 bg-muted/30">
           <div className="container mx-auto px-4">
+            <Breadcrumb items={[{ label: "About Us" }]} className="mb-8" />
             <div className="max-w-3xl mx-auto text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold mb-6">Who We Are</h1>
               <p className="text-xl text-primary font-semibold mb-4">Your Trusted Technology Innovation Partner</p>

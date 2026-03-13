@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Network, Wrench, Headset, ArrowRight, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,10 +9,19 @@ import Image from "next/image"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Our Services - What We Do | Ardent Prime Innovations LLC",
+  title: "Our Services - IT Solutions & Infrastructure",
   description:
     "Explore our comprehensive IT services including infrastructure, installation, integration, and managed IT services. Enterprise-grade solutions for businesses of all sizes.",
-  keywords: "IT services, IT infrastructure, network installation, managed IT services, technology solutions",
+  keywords: ["IT services", "IT infrastructure", "network installation", "managed IT services", "technology solutions", "cybersecurity", "cloud services"],
+  openGraph: {
+    title: "Our Services - Ardent Prime Innovations LLC",
+    description: "Comprehensive IT services: infrastructure, installation, integration, and managed IT support.",
+    url: "https://ardentprime.com/services",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/services",
+  },
 }
 
 const services = [
@@ -72,6 +82,7 @@ export default function ServicesPage() {
         {/* Hero Section */}
         <section className="py-24 bg-muted/30">
           <div className="container mx-auto px-4">
+            <Breadcrumb items={[{ label: "Services" }]} className="mb-8" />
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">What We Do</h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

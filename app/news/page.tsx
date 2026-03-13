@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, ArrowRight } from "lucide-react"
 import Link from "next/link"
@@ -7,10 +8,19 @@ import type { Metadata } from "next"
 import { PartnerNews } from "@/components/partner-news"
 
 export const metadata: Metadata = {
-  title: "News & Insights | Ardent Prime Innovations LLC",
+  title: "News & Insights",
   description:
     "Stay updated with the latest technology insights, innovations, and success stories from Ardent Prime Innovations. Industry news and IT trends.",
-  keywords: "IT news, technology insights, cybersecurity news, IT trends, case studies, innovation",
+  keywords: ["IT news", "technology insights", "cybersecurity news", "IT trends", "case studies", "innovation", "tech updates"],
+  openGraph: {
+    title: "News & Insights - Ardent Prime Innovations LLC",
+    description: "Latest technology insights, innovations, and success stories. Stay updated with IT trends.",
+    url: "https://ardentprime.com/news",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/news",
+  },
 }
 
 const newsItems = [
