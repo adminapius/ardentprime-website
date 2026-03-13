@@ -2,8 +2,30 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { useEffect } from "react"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Read our terms of service and conditions. Understand your rights and responsibilities when using Ardent Prime services.",
+  keywords: ["terms of service", "terms and conditions", "legal", "user agreement"],
+  openGraph: {
+    title: "Terms of Service - Ardent Prime Innovations LLC",
+    description: "Our terms of service and user agreement.",
+    url: "https://ardentprime.com/terms-of-service",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/terms-of-service",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    "max-snippet": -1,
+  },
+}
 
 export default function TermsOfServicePage() {
   useEffect(() => {
@@ -15,6 +37,7 @@ export default function TermsOfServicePage() {
       <Header />
       <main className="min-h-screen pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
+          <Breadcrumb items={[{ label: "Terms of Service" }]} className="mb-8" />
           <h1 className="text-4xl md:text-5xl font-bold mb-8">Terms of Service</h1>
           <div className="prose prose-lg max-w-none">
             <p className="text-muted-foreground mb-6">Last updated: October 2, 2025</p>

@@ -2,8 +2,30 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { useEffect } from "react"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Cookie Policy",
+  description: "Learn about how Ardent Prime Innovations uses cookies and tracking technologies on our website.",
+  keywords: ["cookie policy", "cookies", "tracking", "analytics", "user preferences"],
+  openGraph: {
+    title: "Cookie Policy - Ardent Prime Innovations LLC",
+    description: "Our cookie policy and tracking information.",
+    url: "https://ardentprime.com/cookie-policy",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/cookie-policy",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    "max-snippet": -1,
+  },
+}
 
 export default function CookiePolicyPage() {
   useEffect(() => {
@@ -15,6 +37,7 @@ export default function CookiePolicyPage() {
       <Header />
       <main className="min-h-screen pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
+          <Breadcrumb items={[{ label: "Cookie Policy" }]} className="mb-8" />
           <h1 className="text-4xl md:text-5xl font-bold mb-8">Cookie Policy</h1>
           <div className="prose prose-lg max-w-none">
             <p className="text-muted-foreground mb-6">Last updated: October 2, 2025</p>

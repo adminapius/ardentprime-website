@@ -2,8 +2,30 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { useEffect } from "react"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Learn how Ardent Prime Innovations protects your data and privacy. Read our comprehensive privacy policy.",
+  keywords: ["privacy policy", "data protection", "GDPR", "privacy", "personal data"],
+  openGraph: {
+    title: "Privacy Policy - Ardent Prime Innovations LLC",
+    description: "Our privacy policy and data protection commitment.",
+    url: "https://ardentprime.com/privacy-policy",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/privacy-policy",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    "max-snippet": -1,
+  },
+}
 
 export default function PrivacyPolicyPage() {
   useEffect(() => {
@@ -15,6 +37,7 @@ export default function PrivacyPolicyPage() {
       <Header />
       <main className="min-h-screen pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
+          <Breadcrumb items={[{ label: "Privacy Policy" }]} className="mb-8" />
           <h1 className="text-4xl md:text-5xl font-bold mb-8">Privacy Policy</h1>
           <div className="prose prose-lg max-w-none">
             <p className="text-muted-foreground mb-6">Last updated: October 2, 2025</p>

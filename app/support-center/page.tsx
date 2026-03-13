@@ -1,6 +1,8 @@
 "use client"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
+import { FAQSchema } from "@/components/faq-schema"
 import { useRouter } from "next/navigation"
 
 import type React from "react"
@@ -15,6 +17,23 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { submitSupportTicket } from "@/app/actions/support"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Support Center - Contract Customer Support",
+  description:
+    "Access our support center for contract customers. Submit support tickets, get technical assistance, and manage your IT infrastructure with Ardent Prime Innovations.",
+  keywords: ["support center", "technical support", "support tickets", "IT support", "customer support", "contract customers", "FAQ", "troubleshooting"],
+  openGraph: {
+    title: "Support Center - Ardent Prime Innovations LLC",
+    description: "Contract customer support center. Submit tickets and get technical assistance.",
+    url: "https://ardentprime.com/support-center",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/support-center",
+  },
+}
 
 const MAX_COMPANY_NAME = 100
 const MAX_FIRST_NAME = 50
@@ -271,8 +290,10 @@ export default function SupportCenterPage() {
 
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary/10 via-background to-background">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
+        <div className="container mx-auto px-4">
+          <Breadcrumb items={[{ label: "Support Center" }]} className="mb-8" />
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
           </p>
@@ -499,6 +520,9 @@ export default function SupportCenterPage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
             <p className="text-muted-foreground">Find solutions to common issues and learn more about our services.</p>
           </div>
+
+          {/* Inject FAQ Schema for search results */}
+          <FAQSchema faqs={faqs} />
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (

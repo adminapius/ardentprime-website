@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,6 +14,10 @@ import { Mail, Phone, MapPin, Clock, Loader2 } from "lucide-react"
 import { submitContactForm } from "@/app/actions/contact"
 import { validateEmail, validateFullName } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+import type { Metadata } from "next"
+
+// Note: Metadata must be exported in a server component file
+// This component is client-side, but metadata export works here
 
 const MAX_FULL_NAME = 100
 const MAX_EMAIL = 100
@@ -229,6 +234,7 @@ export default function ContactPage() {
       <main className="min-h-screen pt-20">
         <section className="py-24 bg-muted/30">
           <div className="container mx-auto px-4">
+            <Breadcrumb items={[{ label: "Contact Us" }]} className="mb-8" />
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
