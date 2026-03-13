@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, ArrowRight } from "lucide-react"
 import Link from "next/link"
@@ -7,10 +8,19 @@ import type { Metadata } from "next"
 import { PartnerNews } from "@/components/partner-news"
 
 export const metadata: Metadata = {
-  title: "News & Insights | Ardent Prime Innovations LLC",
+  title: "News & Insights",
   description:
     "Stay updated with the latest technology insights, innovations, and success stories from Ardent Prime Innovations. Industry news and IT trends.",
-  keywords: "IT news, technology insights, cybersecurity news, IT trends, case studies, innovation",
+  keywords: ["IT news", "technology insights", "cybersecurity news", "IT trends", "case studies", "innovation", "tech updates"],
+  openGraph: {
+    title: "News & Insights - Ardent Prime Innovations LLC",
+    description: "Latest technology insights, innovations, and success stories. Stay updated with IT trends.",
+    url: "https://ardentprime.com/news",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://ardentprime.com/news",
+  },
 }
 
 const newsItems = [
@@ -76,6 +86,7 @@ export default function NewsPage() {
       <main className="min-h-screen pt-20">
         <section className="py-24 bg-muted/30">
           <div className="container mx-auto px-4">
+            <Breadcrumb items={[{ label: "News & Insights" }]} className="mb-8" />
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">News & Insights</h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

@@ -1,6 +1,8 @@
 "use client"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
+import { FAQSchema } from "@/components/faq-schema"
 import { useRouter } from "next/navigation"
 
 import type React from "react"
@@ -15,6 +17,8 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { submitSupportTicket } from "@/app/actions/support"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+
+// Note: Metadata must be in a server component. See app/support-center/layout.tsx for SEO metadata.
 
 const MAX_COMPANY_NAME = 100
 const MAX_FIRST_NAME = 50
@@ -271,11 +275,14 @@ export default function SupportCenterPage() {
 
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary/10 via-background to-background">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
-          </p>
+        <div className="container mx-auto px-4">
+          <Breadcrumb items={[{ label: "Support Center" }]} className="mb-8" />
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -499,6 +506,9 @@ export default function SupportCenterPage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
             <p className="text-muted-foreground">Find solutions to common issues and learn more about our services.</p>
           </div>
+
+          {/* Inject FAQ Schema for search results */}
+          <FAQSchema faqs={faqs} />
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (

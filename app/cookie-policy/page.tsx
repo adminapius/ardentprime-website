@@ -2,8 +2,11 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { useEffect } from "react"
+
+// Note: Metadata must be in a server component. See app/cookie-policy/layout.tsx for SEO metadata.
 
 export default function CookiePolicyPage() {
   useEffect(() => {
@@ -15,6 +18,7 @@ export default function CookiePolicyPage() {
       <Header />
       <main className="min-h-screen pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
+          <Breadcrumb items={[{ label: "Cookie Policy" }]} className="mb-8" />
           <h1 className="text-4xl md:text-5xl font-bold mb-8">Cookie Policy</h1>
           <div className="prose prose-lg max-w-none">
             <p className="text-muted-foreground mb-6">Last updated: October 2, 2025</p>

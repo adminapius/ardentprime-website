@@ -1,6 +1,16 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Home, ArrowLeft } from "lucide-react"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Page Not Found (404)",
+  description: "The page you are looking for doesn't exist or has been moved. Return to Ardent Prime Innovations homepage for IT solutions and services.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+}
 
 export default function NotFound() {
   return (
