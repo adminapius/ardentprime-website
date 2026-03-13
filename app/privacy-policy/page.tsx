@@ -5,27 +5,8 @@ import { Footer } from "@/components/footer"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { useEffect } from "react"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "Learn how Ardent Prime Innovations protects your data and privacy. Read our comprehensive privacy policy.",
-  keywords: ["privacy policy", "data protection", "GDPR", "privacy", "personal data"],
-  openGraph: {
-    title: "Privacy Policy - Ardent Prime Innovations LLC",
-    description: "Our privacy policy and data protection commitment.",
-    url: "https://ardentprime.com/privacy-policy",
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://ardentprime.com/privacy-policy",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    "max-snippet": -1,
-  },
-}
+// Note: Metadata must be in a server component. See app/privacy-policy/layout.tsx for SEO metadata.
 
 export default function PrivacyPolicyPage() {
   useEffect(() => {

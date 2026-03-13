@@ -17,23 +17,8 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { submitSupportTicket } from "@/app/actions/support"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
-import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Support Center - Contract Customer Support",
-  description:
-    "Access our support center for contract customers. Submit support tickets, get technical assistance, and manage your IT infrastructure with Ardent Prime Innovations.",
-  keywords: ["support center", "technical support", "support tickets", "IT support", "customer support", "contract customers", "FAQ", "troubleshooting"],
-  openGraph: {
-    title: "Support Center - Ardent Prime Innovations LLC",
-    description: "Contract customer support center. Submit tickets and get technical assistance.",
-    url: "https://ardentprime.com/support-center",
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://ardentprime.com/support-center",
-  },
-}
+// Note: Metadata must be in a server component. See app/support-center/layout.tsx for SEO metadata.
 
 const MAX_COMPANY_NAME = 100
 const MAX_FIRST_NAME = 50
@@ -294,9 +279,10 @@ export default function SupportCenterPage() {
           <Breadcrumb items={[{ label: "Support Center" }]} className="mb-8" />
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">ARDENT PRIME Support Center</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
-          </p>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              {"We're here to help! Submit a ticket, find answers to common questions, or get in touch with our support team."}
+            </p>
+          </div>
         </div>
       </section>
 
