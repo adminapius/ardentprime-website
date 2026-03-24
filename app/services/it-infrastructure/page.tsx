@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ServiceSchema } from "@/components/structured-data"
 import { Network, RotateCcw, Video, Radio, Lock, Zap, Settings, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -51,6 +52,11 @@ const services = [
 export default function ITInfrastructurePage() {
   return (
     <>
+      <ServiceSchema
+        name="IT Infrastructure Services"
+        description="Enterprise-grade IT infrastructure services including network systems, CCTV, audio systems, access control, and power management. Custom solutions for your business."
+        url="https://ardentprime.com/services/it-infrastructure"
+      />
       <Header />
       <main className="min-h-screen pt-20">
         {/* Hero Section */}

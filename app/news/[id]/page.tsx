@@ -2,12 +2,19 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ArticleSchema } from "@/components/structured-data"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { Calendar, ArrowLeft, User } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useEffect } from "react"
 import { notFound } from "next/navigation"
+
+// Helper function to convert date string to ISO format
+function toISODate(dateStr: string): string {
+  const date = new Date(dateStr)
+  return date.toISOString().split("T")[0]
+}
 
 // Full article data for all 6 news items
 const articlesData: Record<string, {
@@ -285,6 +292,15 @@ export default function NewsArticlePage({ params }: { params: { id: string } }) 
 
   return (
     <>
+      {/* Article Schema for SEO rich snippets */}
+      <ArticleSchema
+        headline={article.title}
+        description={article.excerpt}
+        image={article.image}
+        datePublished={toISODate(article.date)}
+        author={article.author}
+        url={`https://ardentprime.com/news/${params.id}`}
+      />
       <Header />
       <main className="min-h-screen pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
