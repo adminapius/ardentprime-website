@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ServiceSchema } from "@/components/structured-data"
 import {
   Wrench,
   MapPin,
@@ -62,6 +63,11 @@ const services = [
 export default function InstallationIntegrationPage() {
   return (
     <>
+      <ServiceSchema
+        name="Professional Installation & Integration Services"
+        description="Expert IT installation and integration services including cabling, hardware deployment, firewall installation, and site surveys. Seamless implementation guaranteed."
+        url="https://ardentprime.com/services/installation-integration"
+      />
       <Header />
       <main className="min-h-screen pt-20">
         {/* Hero Section */}

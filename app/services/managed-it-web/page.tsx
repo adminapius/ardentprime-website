@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ServiceSchema } from "@/components/structured-data"
 import {
   Headset,
   MonitorCheck,
@@ -60,6 +61,11 @@ const services = [
 export default function ManagedITWebPage() {
   return (
     <>
+      <ServiceSchema
+        name="Managed IT & Web Services"
+        description="Comprehensive 24/7 managed IT services including monitoring, support, maintenance, and web services. Keep your systems running smoothly and securely."
+        url="https://ardentprime.com/services/managed-it-web"
+      />
       <Header />
       <main className="min-h-screen pt-20">
         {/* Hero Section */}

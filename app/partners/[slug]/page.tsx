@@ -2,12 +2,20 @@
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { VideoSchema } from "@/components/structured-data"
 import { notFound, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react"
 import { VideoEmbed } from "@/components/video-embed"
 import { useEffect } from "react"
 import Link from "next/link"
+
+// Helper function to extract YouTube video ID
+function getYouTubeVideoId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+  const match = url.match(regExp)
+  return match && match[2].length === 11 ? match[2] : null
+}
 
 // Partner data
 const partnersData: Record<
@@ -300,8 +308,21 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [])
 
+  const videoId = partner.videoUrl ? getYouTubeVideoId(partner.videoUrl) : null
+
   return (
     <>
+      {/* Video Schema for SEO - only render if video exists */}
+      {partner.videoUrl && videoId && (
+        <VideoSchema
+          name={`${partner.name} Overview Video`}
+          description={partner.description}
+          thumbnailUrl={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+          uploadDate="2024-01-01"
+          contentUrl={partner.videoUrl}
+          embedUrl={`https://www.youtube.com/embed/${videoId}`}
+        />
+      )}
       <Header />
       <main className="min-h-screen pt-20">
         <div className="container mx-auto px-4 py-16">

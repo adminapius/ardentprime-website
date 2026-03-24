@@ -193,3 +193,105 @@ export function BreadcrumbSchema({ items }: { items: BreadcrumbItem[] }) {
     />
   )
 }
+
+// Video Schema for partner pages with YouTube embeds
+interface VideoSchemaProps {
+  name: string
+  description: string
+  thumbnailUrl: string
+  uploadDate: string
+  contentUrl: string
+  embedUrl: string
+  duration?: string
+}
+
+export function VideoSchema({ 
+  name, 
+  description, 
+  thumbnailUrl, 
+  uploadDate, 
+  contentUrl, 
+  embedUrl,
+  duration 
+}: VideoSchemaProps) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name,
+    description,
+    thumbnailUrl,
+    uploadDate,
+    contentUrl,
+    embedUrl,
+    duration: duration || "PT5M", // Default 5 minutes if not specified
+    publisher: {
+      "@type": "Organization",
+      name: "Ardent Prime Innovations LLC",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://ardentprime.com/logo.png",
+      },
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+// Article Schema for news/blog posts
+interface ArticleSchemaProps {
+  headline: string
+  description: string
+  image: string
+  datePublished: string
+  dateModified?: string
+  author?: string
+  url: string
+}
+
+export function ArticleSchema({
+  headline,
+  description,
+  image,
+  datePublished,
+  dateModified,
+  author = "Ardent Prime Team",
+  url,
+}: ArticleSchemaProps) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    description,
+    image: `https://ardentprime.com${image}`,
+    datePublished,
+    dateModified: dateModified || datePublished,
+    author: {
+      "@type": "Person",
+      name: author,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Ardent Prime Innovations LLC",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://ardentprime.com/logo.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url,
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
