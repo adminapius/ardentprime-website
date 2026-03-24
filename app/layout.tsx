@@ -2,9 +2,13 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Suspense } from "react"
+import Script from "next/script"
 import { Analytics } from "@vercel/analytics/react"
 import { OrganizationSchema, LocalBusinessSchema, WebsiteSchema } from "@/components/structured-data"
 import "./globals.css"
+
+// Google Analytics Measurement ID
+const GA_MEASUREMENT_ID = "G-D9HQELL9FM"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -120,6 +124,21 @@ export default function RootLayout({
   return (
     <html lang="en" className="theme-3">
       <head>
+        {/* Google Analytics 4 */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
         {/* JSON-LD Structured Data for SEO */}
         <OrganizationSchema />
         <LocalBusinessSchema />
