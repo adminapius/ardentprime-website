@@ -1,4 +1,7 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
+import { FAQSchema } from "@/components/faq-schema"
+import { faqs } from "./faqs-data"
 
 export const metadata: Metadata = {
   title: "Support Center - Contract Customer Support",
@@ -15,10 +18,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function SupportCenterLayout({
+export default async function SupportCenterLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return children
+  const nonce = (await headers()).get("x-nonce") ?? undefined
+  return (
+    <>
+      <FAQSchema faqs={faqs} nonce={nonce} />
+      {children}
+    </>
+  )
 }

@@ -83,3 +83,41 @@ export async function checkContactRateLimit(
 export async function getSubmissionIP(): Promise<string> {
   return getClientIP()
 }
+
+// Support tickets previously had no rate limiting at all, unlike the contact
+// form. Each submission also triggers a DNS lookup and two outbound emails,
+// so an unthrottled endpoint is both a spam vector and a way to run up
+// email/DNS API usage. Cap at 3 tickets per IP per day.
+export async function checkSupportRateLimit(): Promise<{ allowed: boolean; error?: string }> {
+  try {
+    const ip = getClientIP()
+    const supabase = createAdminClient()
+
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+
+    const { count, error } = await supabase
+      .from("support_tickets")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", today.toISOString())
+      .eq("ip_address", ip)
+
+    if (error) {
+      console.error("Support rate limit check error:", error)
+      return { allowed: true }
+    }
+
+    if (count !== null && count >= 3) {
+      return {
+        allowed: false,
+        error:
+          "You have reached the maximum of 3 support tickets per day. For urgent issues, please call us directly.",
+      }
+    }
+
+    return { allowed: true }
+  } catch (error) {
+    console.error("Support rate limit check failed:", error)
+    return { allowed: true }
+  }
+}

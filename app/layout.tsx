@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Suspense } from "react"
 import Script from "next/script"
+import { headers } from "next/headers"
 import { Analytics } from "@vercel/analytics/react"
 import { OrganizationSchema, LocalBusinessSchema, WebsiteSchema } from "@/components/structured-data"
 import "./globals.css"
@@ -116,11 +117,13 @@ export const viewport: Viewport = {
   ],
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined
+
   return (
     <html lang="en" className="theme-3">
       <head>
@@ -128,8 +131,9 @@ export default function RootLayout({
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
           strategy="afterInteractive"
+          nonce={nonce}
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -140,9 +144,9 @@ export default function RootLayout({
           `}
         </Script>
         {/* JSON-LD Structured Data for SEO */}
-        <OrganizationSchema />
-        <LocalBusinessSchema />
-        <WebsiteSchema />
+        <OrganizationSchema nonce={nonce} />
+        <LocalBusinessSchema nonce={nonce} />
+        <WebsiteSchema nonce={nonce} />
       </head>
       <body className={`font-sans ${inter.variable} antialiased`}>
         <Suspense fallback={null}>{children}</Suspense>

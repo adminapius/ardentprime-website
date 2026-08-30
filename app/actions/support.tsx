@@ -3,6 +3,8 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+import { escapeHtml } from "@/lib/sanitize"
+import { checkSupportRateLimit, getSubmissionIP } from "@/app/actions/rate-limit"
 async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -96,7 +98,14 @@ export async function submitSupportTicket(formData: {
       return { success: false, error: "Phone number must be exactly 10 digits" }
     }
 
+    // Rate limiting: this form previously had none, unlike the contact form
+    const rateCheck = await checkSupportRateLimit()
+    if (!rateCheck.allowed) {
+      return { success: false, error: rateCheck.error || "Rate limit exceeded" }
+    }
+
     const supabase = createAdminClient()
+    const ip = await getSubmissionIP()
 
     const { data: contractCustomers, error: searchError } = await supabase
       .from("contract_customers")
@@ -126,6 +135,7 @@ export async function submitSupportTicket(formData: {
       subject: formData.subject,
       priority: formData.priority,
       description: formData.message,
+      ip_address: ip,
     })
 
     if (error) throw error
@@ -149,21 +159,21 @@ export async function submitSupportTicket(formData: {
       await sendEmail({
         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: ["support@ardentprime.com"],
-        subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject}`,
+        subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject.replace(/[\r\n]/g, " ")}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
 <p><strong>New support ticket received:</strong></p>
 
 <table style="border-collapse: collapse; margin: 16px 0;">
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;"><span style="color: ${priorityColors[formData.priority] || "#555"}; font-weight: bold;">${priorityLabels[formData.priority] || formData.priority}</span></td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.firstName} ${formData.lastName}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;"><span style="color: ${priorityColors[formData.priority] || "#555"}; font-weight: bold;">${escapeHtml(priorityLabels[formData.priority] || formData.priority)}</span></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${escapeHtml(formData.subject)}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${escapeHtml(formData.company)}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${escapeHtml(formData.firstName)} ${escapeHtml(formData.lastName)}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${encodeURIComponent(formData.email)}" style="color: #1a73e8;">${escapeHtml(formData.email)}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${encodeURIComponent(formData.phone)}" style="color: #1a73e8;">${escapeHtml(formData.phone)}</a></td></tr>
 </table>
 
 <p><strong>Message:</strong></p>
-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid ${priorityColors[formData.priority] || "#1a73e8"};">${formData.message}</p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid ${priorityColors[formData.priority] || "#1a73e8"};">${escapeHtml(formData.message)}</p>
 
 <br/>
 <p style="font-size: 12px; color: #999;">Submitted from the Ardent Prime Support Center.</p>
@@ -174,20 +184,20 @@ export async function submitSupportTicket(formData: {
       await sendEmail({
         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: [formData.email],
-        subject: `Support Ticket Received - ${formData.subject}`,
+        subject: `Support Ticket Received - ${formData.subject.replace(/[\r\n]/g, " ")}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
-<p>Hi ${formData.firstName},</p>
+<p>Hi ${escapeHtml(formData.firstName)},</p>
 
 <p>Thank you for contacting <strong><span style="background-color: #fff3a8;">ARDENT PRIME</span></strong> support. We have received your ticket and our team will respond within 24 hours.</p>
 
 <p><strong>Your ticket details:</strong></p>
 <table style="border-collapse: collapse; margin: 8px 0 16px;">
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;">${priorityLabels[formData.priority] || formData.priority}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${escapeHtml(formData.subject)}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;">${escapeHtml(priorityLabels[formData.priority] || formData.priority)}</td></tr>
 </table>
 
 <p><strong>Your message:</strong></p>
-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${escapeHtml(formData.message)}</p>
 
 <p style="margin-top: 20px;">For urgent matters, you can also reach us at:<br/>
 Phone: +1 (219) 999-2867</p>

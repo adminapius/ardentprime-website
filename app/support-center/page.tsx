@@ -2,7 +2,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { FAQSchema } from "@/components/faq-schema"
 import { useRouter } from "next/navigation"
 
 import type React from "react"
@@ -17,6 +16,7 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { submitSupportTicket } from "@/app/actions/support"
 import { validateEmail } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+import { faqs } from "./faqs-data"
 
 // Note: Metadata must be in a server component. See app/support-center/layout.tsx for SEO metadata.
 
@@ -245,29 +245,6 @@ export default function SupportCenterPage() {
 
     setIsSubmitting(false)
   }
-
-  const faqs = [
-    {
-      question: "How do I reset my password?",
-      answer:
-        "If you are a managed service client, please contact your dedicated IT support line. For other services, please refer to your onboarding documentation.",
-    },
-    {
-      question: "What are your business hours?",
-      answer:
-        "Our standard business hours are Monday-Friday, 8 AM - 5 PM EST. Emergency support is available 24/7 for critical issues.",
-    },
-    {
-      question: "Do you offer onsite support?",
-      answer:
-        "Yes, we offer onsite support for our managed IT service clients based on their service agreement. Please contact us for details.",
-    },
-    {
-      question: "How can I check my service status?",
-      answer:
-        "For managed service clients, you can check your service status through our client portal. Alternatively, you can submit a ticket here.",
-    },
-  ]
 
   return (
     <div className="min-h-screen bg-background">
@@ -507,8 +484,7 @@ export default function SupportCenterPage() {
             <p className="text-muted-foreground">Find solutions to common issues and learn more about our services.</p>
           </div>
 
-          {/* Inject FAQ Schema for search results */}
-          <FAQSchema faqs={faqs} />
+          {/* FAQ Schema is rendered server-side in layout.tsx with a real CSP nonce */}
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (

@@ -1,0 +1,2041 @@
+diff --git a/app/actions/contact.tsx b/app/actions/contact.tsx
+index 1ba941a..66b43a5 100644
+--- a/app/actions/contact.tsx
++++ b/app/actions/contact.tsx
+@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
+ import { validateEmail, validateFullName } from "@/lib/email-validator"
+ import { validateEmailDomain } from "@/app/actions/validate-email-domain"
+ import { checkContactRateLimit, getSubmissionIP } from "@/app/actions/rate-limit"
++import { escapeHtml } from "@/lib/sanitize"
+ 
+ async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+   const res = await fetch("https://api.resend.com/emails", {
+@@ -94,21 +95,45 @@ export async function submitContactForm(formData: {
+     const supabase = createAdminClient()
+     const ip = await getSubmissionIP()
+ 
+-    // Check for duplicate within past week (existing logic)
++    // Check for duplicate within past week (existing logic).
++    // NOTE: previously this ran a single `.or()` call with the user's email,
++    // phone, and name interpolated directly into the PostgREST filter string.
++    // Since `.or()` syntax uses commas/periods as filter separators, a
++    // submitted value containing those characters could inject additional
++    // filter clauses. Running separate, properly parameterized `.eq()`
++    // queries avoids that entirely.
+     const oneWeekAgo = new Date()
+     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+-
+-    const { data: existingSubmissions, error: checkError } = await supabase
+-      .from("contact_submissions")
+-      .select("*")
+-      .gte("created_at", oneWeekAgo.toISOString())
+-      .or(`email.eq.${formData.email},phone.eq.${formData.phone},full_name.eq.${formData.fullName}`)
+-
++    const oneWeekAgoISO = oneWeekAgo.toISOString()
++
++    const duplicateChecks = await Promise.all([
++      supabase
++        .from("contact_submissions")
++        .select("id")
++        .gte("created_at", oneWeekAgoISO)
++        .eq("email", formData.email),
++      formData.phone
++        ? supabase
++            .from("contact_submissions")
++            .select("id")
++            .gte("created_at", oneWeekAgoISO)
++            .eq("phone", formData.phone)
++        : Promise.resolve({ data: [], error: null }),
++      supabase
++        .from("contact_submissions")
++        .select("id")
++        .gte("created_at", oneWeekAgoISO)
++        .eq("full_name", formData.fullName),
++    ])
++
++    const checkError = duplicateChecks.find((r) => r.error)?.error
+     if (checkError) {
+       console.error("Error checking for duplicate submissions:", checkError)
+     }
+ 
+-    if (existingSubmissions && existingSubmissions.length > 0) {
++    const existingSubmissions = duplicateChecks.flatMap((r) => r.data ?? [])
++
++    if (existingSubmissions.length > 0) {
+       return {
+         success: false,
+         error:
+@@ -142,20 +167,20 @@ export async function submitContactForm(formData: {
+       await sendEmail({
+         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
+         to: ["sales@ardentprime.com"],
+-        subject: `[ArdentPrime Sales] New Contact Inquiry - ${serviceName}`,
++        subject: `[ArdentPrime Sales] New Contact Inquiry - ${serviceName.replace(/[\r\n]/g, " ")}`,
+         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+ <p><strong>New contact form submission received:</strong></p>
+ 
+ <table style="border-collapse: collapse; margin: 16px 0;">
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.fullName}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company || "Not provided"}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Service:</td><td style="padding: 4px 0;">${serviceName}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${escapeHtml(formData.fullName)}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${encodeURIComponent(formData.email)}" style="color: #1a73e8;">${escapeHtml(formData.email)}</a></td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${encodeURIComponent(formData.phone ?? "")}" style="color: #1a73e8;">${escapeHtml(formData.phone)}</a></td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${escapeHtml(formData.company) || "Not provided"}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Service:</td><td style="padding: 4px 0;">${escapeHtml(serviceName)}</td></tr>
+ </table>
+ 
+ <p><strong>Message:</strong></p>
+-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
++<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${escapeHtml(formData.message)}</p>
+ 
+ <br/>
+ <p style="font-size: 12px; color: #999;">Sent from the Ardent Prime website contact form.</p>
+diff --git a/app/actions/rate-limit.ts b/app/actions/rate-limit.ts
+index 3600aab..32ad577 100644
+--- a/app/actions/rate-limit.ts
++++ b/app/actions/rate-limit.ts
+@@ -83,3 +83,41 @@ export async function checkContactRateLimit(
+ export async function getSubmissionIP(): Promise<string> {
+   return getClientIP()
+ }
++
++// Support tickets previously had no rate limiting at all, unlike the contact
++// form. Each submission also triggers a DNS lookup and two outbound emails,
++// so an unthrottled endpoint is both a spam vector and a way to run up
++// email/DNS API usage. Cap at 3 tickets per IP per day.
++export async function checkSupportRateLimit(): Promise<{ allowed: boolean; error?: string }> {
++  try {
++    const ip = getClientIP()
++    const supabase = createAdminClient()
++
++    const today = new Date()
++    today.setUTCHours(0, 0, 0, 0)
++
++    const { count, error } = await supabase
++      .from("support_tickets")
++      .select("*", { count: "exact", head: true })
++      .gte("created_at", today.toISOString())
++      .eq("ip_address", ip)
++
++    if (error) {
++      console.error("Support rate limit check error:", error)
++      return { allowed: true }
++    }
++
++    if (count !== null && count >= 3) {
++      return {
++        allowed: false,
++        error:
++          "You have reached the maximum of 3 support tickets per day. For urgent issues, please call us directly.",
++      }
++    }
++
++    return { allowed: true }
++  } catch (error) {
++    console.error("Support rate limit check failed:", error)
++    return { allowed: true }
++  }
++}
+diff --git a/app/actions/support.tsx b/app/actions/support.tsx
+index 8f6ded9..ddd7309 100644
+--- a/app/actions/support.tsx
++++ b/app/actions/support.tsx
+@@ -3,6 +3,8 @@
+ import { createAdminClient } from "@/lib/supabase/admin"
+ import { validateEmail } from "@/lib/email-validator"
+ import { validateEmailDomain } from "@/app/actions/validate-email-domain"
++import { escapeHtml } from "@/lib/sanitize"
++import { checkSupportRateLimit, getSubmissionIP } from "@/app/actions/rate-limit"
+ async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
+   const res = await fetch("https://api.resend.com/emails", {
+     method: "POST",
+@@ -96,7 +98,14 @@ export async function submitSupportTicket(formData: {
+       return { success: false, error: "Phone number must be exactly 10 digits" }
+     }
+ 
++    // Rate limiting: this form previously had none, unlike the contact form
++    const rateCheck = await checkSupportRateLimit()
++    if (!rateCheck.allowed) {
++      return { success: false, error: rateCheck.error || "Rate limit exceeded" }
++    }
++
+     const supabase = createAdminClient()
++    const ip = await getSubmissionIP()
+ 
+     const { data: contractCustomers, error: searchError } = await supabase
+       .from("contract_customers")
+@@ -126,6 +135,7 @@ export async function submitSupportTicket(formData: {
+       subject: formData.subject,
+       priority: formData.priority,
+       description: formData.message,
++      ip_address: ip,
+     })
+ 
+     if (error) throw error
+@@ -149,21 +159,21 @@ export async function submitSupportTicket(formData: {
+       await sendEmail({
+         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
+         to: ["support@ardentprime.com"],
+-        subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject}`,
++        subject: `[ArdentPrime Support] [${formData.priority.toUpperCase()}] ${formData.subject.replace(/[\r\n]/g, " ")}`,
+         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+ <p><strong>New support ticket received:</strong></p>
+ 
+ <table style="border-collapse: collapse; margin: 16px 0;">
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;"><span style="color: ${priorityColors[formData.priority] || "#555"}; font-weight: bold;">${priorityLabels[formData.priority] || formData.priority}</span></td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.firstName} ${formData.lastName}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;"><span style="color: ${priorityColors[formData.priority] || "#555"}; font-weight: bold;">${escapeHtml(priorityLabels[formData.priority] || formData.priority)}</span></td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${escapeHtml(formData.subject)}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${escapeHtml(formData.company)}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${escapeHtml(formData.firstName)} ${escapeHtml(formData.lastName)}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${encodeURIComponent(formData.email)}" style="color: #1a73e8;">${escapeHtml(formData.email)}</a></td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${encodeURIComponent(formData.phone)}" style="color: #1a73e8;">${escapeHtml(formData.phone)}</a></td></tr>
+ </table>
+ 
+ <p><strong>Message:</strong></p>
+-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid ${priorityColors[formData.priority] || "#1a73e8"};">${formData.message}</p>
++<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid ${priorityColors[formData.priority] || "#1a73e8"};">${escapeHtml(formData.message)}</p>
+ 
+ <br/>
+ <p style="font-size: 12px; color: #999;">Submitted from the Ardent Prime Support Center.</p>
+@@ -174,20 +184,20 @@ export async function submitSupportTicket(formData: {
+       await sendEmail({
+         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
+         to: [formData.email],
+-        subject: `Support Ticket Received - ${formData.subject}`,
++        subject: `Support Ticket Received - ${formData.subject.replace(/[\r\n]/g, " ")}`,
+         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
+-<p>Hi ${formData.firstName},</p>
++<p>Hi ${escapeHtml(formData.firstName)},</p>
+ 
+ <p>Thank you for contacting <strong><span style="background-color: #fff3a8;">ARDENT PRIME</span></strong> support. We have received your ticket and our team will respond within 24 hours.</p>
+ 
+ <p><strong>Your ticket details:</strong></p>
+ <table style="border-collapse: collapse; margin: 8px 0 16px;">
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${formData.subject}</td></tr>
+-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;">${priorityLabels[formData.priority] || formData.priority}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Subject:</td><td style="padding: 4px 0;">${escapeHtml(formData.subject)}</td></tr>
++  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Priority:</td><td style="padding: 4px 0;">${escapeHtml(priorityLabels[formData.priority] || formData.priority)}</td></tr>
+ </table>
+ 
+ <p><strong>Your message:</strong></p>
+-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
++<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${escapeHtml(formData.message)}</p>
+ 
+ <p style="margin-top: 20px;">For urgent matters, you can also reach us at:<br/>
+ Phone: +1 (219) 999-2867</p>
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 13c95ac..5104c29 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
+ import { Inter } from "next/font/google"
+ import { Suspense } from "react"
+ import Script from "next/script"
++import { headers } from "next/headers"
+ import { Analytics } from "@vercel/analytics/react"
+ import { OrganizationSchema, LocalBusinessSchema, WebsiteSchema } from "@/components/structured-data"
+ import "./globals.css"
+@@ -116,11 +117,13 @@ export const viewport: Viewport = {
+   ],
+ }
+ 
+-export default function RootLayout({
++export default async function RootLayout({
+   children,
+ }: Readonly<{
+   children: React.ReactNode
+ }>) {
++  const nonce = (await headers()).get("x-nonce") ?? undefined
++
+   return (
+     <html lang="en" className="theme-3">
+       <head>
+@@ -128,8 +131,9 @@ export default function RootLayout({
+         <Script
+           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+           strategy="afterInteractive"
++          nonce={nonce}
+         />
+-        <Script id="google-analytics" strategy="afterInteractive">
++        <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
+           {`
+             window.dataLayer = window.dataLayer || [];
+             function gtag(){dataLayer.push(arguments);}
+@@ -140,9 +144,9 @@ export default function RootLayout({
+           `}
+         </Script>
+         {/* JSON-LD Structured Data for SEO */}
+-        <OrganizationSchema />
+-        <LocalBusinessSchema />
+-        <WebsiteSchema />
++        <OrganizationSchema nonce={nonce} />
++        <LocalBusinessSchema nonce={nonce} />
++        <WebsiteSchema nonce={nonce} />
+       </head>
+       <body className={`font-sans ${inter.variable} antialiased`}>
+         <Suspense fallback={null}>{children}</Suspense>
+diff --git a/app/news/[id]/articles-data.ts b/app/news/[id]/articles-data.ts
+new file mode 100644
+index 0000000..4e78262
+--- /dev/null
++++ b/app/news/[id]/articles-data.ts
+@@ -0,0 +1,269 @@
++// Shared article data — used by both the client page (renders the article body)
++// and the server layout (renders ArticleSchema JSON-LD with a real CSP nonce).
++
++export function toISODate(dateStr: string): string {
++  const date = new Date(dateStr)
++  return date.toISOString().split("T")[0]
++}
++
++export const articlesData: Record<string, {
++  title: string
++  category: string
++  date: string
++  author: string
++  image: string
++  excerpt: string
++  content: {
++    intro: string
++    sections: { heading: string; paragraphs: string[] }[]
++    highlights: string[]
++    conclusion: string
++  }
++}> = {
++  "1": {
++    title: "AI-Powered Innovation in Enterprise IT",
++    category: "Innovation",
++    date: "October 1, 2025",
++    author: "Ardent Prime Team",
++    image: "/ai-monitoring-dashboard-technology.jpg",
++    excerpt: "Discover how our latest AI-enhanced solutions are revolutionizing business operations and driving unprecedented efficiency.",
++    content: {
++      intro: "Artificial Intelligence is no longer a futuristic concept—it's transforming how businesses operate today. At Ardent Prime Innovations, we're at the forefront of integrating AI-powered solutions into enterprise IT infrastructure, helping our clients achieve unprecedented levels of efficiency, security, and innovation.",
++      sections: [
++        {
++          heading: "The AI Revolution in Business Operations",
++          paragraphs: [
++            "Modern enterprises generate massive amounts of data every day. Traditional systems struggle to process, analyze, and act on this information in real-time. AI-powered solutions change this paradigm entirely, enabling businesses to make data-driven decisions faster than ever before.",
++            "Our AI integration services help businesses automate routine tasks, predict maintenance needs before failures occur, and identify security threats in milliseconds. This proactive approach reduces downtime, cuts operational costs, and frees your team to focus on strategic initiatives."
++          ]
++        },
++        {
++          heading: "Intelligent Monitoring and Predictive Analytics",
++          paragraphs: [
++            "Our AI-enhanced monitoring systems continuously analyze network traffic, system performance, and user behavior patterns. Machine learning algorithms detect anomalies that human operators might miss, alerting IT teams to potential issues before they impact operations.",
++            "Predictive analytics take this further by forecasting future trends based on historical data. Whether it's predicting storage capacity needs, identifying peak usage periods, or anticipating hardware failures, AI gives businesses the foresight to plan proactively."
++          ]
++        },
++        {
++          heading: "Security Enhancement Through AI",
++          paragraphs: [
++            "Cybersecurity threats evolve constantly, making traditional rule-based security systems increasingly inadequate. AI-powered security solutions learn from each interaction, continuously improving their ability to detect and respond to new threats.",
++            "Our implementations include AI-driven threat detection, automated incident response, and behavioral analysis that identifies suspicious activities even when they don't match known attack patterns."
++          ]
++        }
++      ],
++      highlights: [
++        "Up to 40% reduction in IT operational costs through automation",
++        "99.9% threat detection accuracy with AI-powered security",
++        "Predictive maintenance reducing unplanned downtime by 60%",
++        "Real-time analytics enabling faster business decisions"
++      ],
++      conclusion: "The integration of AI into enterprise IT isn't just about keeping pace with technology—it's about gaining a competitive advantage. Ardent Prime Innovations is committed to helping businesses harness the power of AI to transform their operations. Contact us to learn how AI can revolutionize your IT infrastructure."
++    }
++  },
++  "2": {
++    title: "Advanced Cybersecurity Solutions for Modern Threats",
++    category: "Cybersecurity",
++    date: "September 28, 2025",
++    author: "Ardent Prime Team",
++    image: "/cybersecurity-network-protection.png",
++    excerpt: "Explore our cutting-edge cybersecurity infrastructure protecting Fortune 500 companies from evolving digital threats.",
++    content: {
++      intro: "In today's interconnected world, cybersecurity is not optional—it's essential for business survival. With cyber attacks becoming more sophisticated and frequent, organizations need comprehensive security strategies that go beyond traditional firewalls and antivirus software. Ardent Prime Innovations delivers enterprise-grade cybersecurity solutions that protect your most valuable assets.",
++      sections: [
++        {
++          heading: "The Evolving Threat Landscape",
++          paragraphs: [
++            "Cyber threats have evolved dramatically in recent years. Ransomware attacks have increased by 150% in the past year alone, with average ransom demands exceeding $200,000. Phishing campaigns have become more targeted and convincing, while nation-state actors pose sophisticated threats to critical infrastructure.",
++            "Traditional perimeter-based security is no longer sufficient. Modern threats require a multi-layered approach that protects data at every point—from the network edge to individual endpoints, from cloud services to mobile devices."
++          ]
++        },
++        {
++          heading: "Zero Trust Architecture",
++          paragraphs: [
++            "We implement Zero Trust security models that assume no user or system should be automatically trusted, regardless of their location. Every access request is verified, validated, and secured before granting permission.",
++            "This approach includes micro-segmentation, continuous authentication, and least-privilege access controls. The result is a security posture that minimizes attack surfaces and limits the potential damage of any breach."
++          ]
++        },
++        {
++          heading: "24/7 Security Operations",
++          paragraphs: [
++            "Our Security Operations Center provides round-the-clock monitoring and incident response. Skilled analysts work alongside AI-powered tools to detect threats, investigate incidents, and coordinate responses in real-time.",
++            "We combine threat intelligence feeds, behavioral analytics, and automated response capabilities to identify and neutralize threats before they can cause damage."
++          ]
++        }
++      ],
++      highlights: [
++        "Complete protection across network, endpoint, and cloud environments",
++        "24/7 security monitoring with sub-minute threat response times",
++        "Compliance support for HIPAA, PCI-DSS, SOC 2, and more",
++        "Regular security assessments and penetration testing"
++      ],
++      conclusion: "Cybersecurity is not a one-time investment—it's an ongoing commitment to protecting your business. Ardent Prime Innovations provides the expertise, technology, and vigilance needed to defend against today's threats and prepare for tomorrow's challenges. Partner with us to build a security foundation that protects your business now and in the future."
++    }
++  },
++  "3": {
++    title: "Next-Generation Network Infrastructure",
++    category: "Infrastructure",
++    date: "September 25, 2025",
++    author: "Ardent Prime Team",
++    image: "/modern-data-center-servers.jpg",
++    excerpt: "Exploring cutting-edge technologies that are transforming how businesses build and maintain their IT infrastructure.",
++    content: {
++      intro: "The foundation of every successful digital business is robust, scalable network infrastructure. As organizations embrace cloud computing, remote work, and IoT devices, traditional network architectures struggle to keep pace. Ardent Prime Innovations specializes in designing and implementing next-generation network infrastructure that meets the demands of modern business.",
++      sections: [
++        {
++          heading: "Software-Defined Networking (SDN)",
++          paragraphs: [
++            "Software-defined networking separates the control plane from the data plane, enabling centralized management and dynamic configuration of network resources. This approach provides unprecedented flexibility, allowing networks to adapt to changing business needs in real-time.",
++            "SDN reduces operational complexity, improves security through consistent policy enforcement, and enables automation of routine network tasks. Organizations can provision new services in minutes rather than days."
++          ]
++        },
++        {
++          heading: "High-Performance Data Center Solutions",
++          paragraphs: [
++            "Modern data centers require infrastructure that can handle massive data volumes with minimal latency. We design and implement high-performance computing environments with redundant power, cooling, and connectivity.",
++            "Our solutions include high-density server deployments, enterprise storage systems, and networking fabrics capable of handling 100Gbps and beyond. Every implementation is optimized for reliability, efficiency, and scalability."
++          ]
++        },
++        {
++          heading: "Edge Computing and IoT Integration",
++          paragraphs: [
++            "As IoT devices proliferate and real-time processing becomes critical, edge computing has emerged as an essential component of network architecture. Processing data closer to its source reduces latency, saves bandwidth, and improves application performance.",
++            "We help organizations extend their infrastructure to the edge while maintaining security, manageability, and integration with central systems."
++          ]
++        }
++      ],
++      highlights: [
++        "99.99% uptime with redundant, resilient network designs",
++        "Scalable architecture supporting 10x growth without overhaul",
++        "Reduced operational costs through automation and efficiency",
++        "Seamless integration of cloud, on-premises, and edge resources"
++      ],
++      conclusion: "Network infrastructure is the backbone of digital transformation. With Ardent Prime Innovations as your partner, you can build an infrastructure foundation that supports today's operations while preparing for tomorrow's opportunities. Contact us to discuss your infrastructure modernization needs."
++    }
++  },
++  "4": {
++    title: "Sustainable IT: Technology for a Greener Future",
++    category: "Sustainability",
++    date: "September 20, 2025",
++    author: "Ardent Prime Team",
++    image: "/green-technology-sustainable-computing.jpg",
++    excerpt: "Our commitment to eco-friendly technology solutions that reduce carbon footprint while maximizing efficiency.",
++    content: {
++      intro: "Environmental sustainability is no longer just a corporate responsibility—it's a business imperative. Organizations worldwide are recognizing that green IT practices not only reduce environmental impact but also deliver significant cost savings and operational benefits. Ardent Prime Innovations is committed to helping businesses achieve their sustainability goals through intelligent technology solutions.",
++      sections: [
++        {
++          heading: "Energy-Efficient Infrastructure Design",
++          paragraphs: [
++            "Data centers and IT equipment consume enormous amounts of energy. Through thoughtful design and modern technologies, we help organizations dramatically reduce their energy consumption while maintaining or improving performance.",
++            "Our approach includes server consolidation and virtualization, efficient cooling systems, power management optimization, and strategic use of renewable energy sources. These measures can reduce IT energy consumption by 30-50%."
++          ]
++        },
++        {
++          heading: "Hardware Lifecycle Management",
++          paragraphs: [
++            "The environmental impact of IT extends beyond energy consumption to include the manufacturing, shipping, and disposal of hardware. We implement responsible lifecycle management practices that maximize equipment lifespan and ensure proper recycling.",
++            "Our refresh programs balance the efficiency gains of new hardware against the environmental cost of replacement, helping clients make informed decisions that benefit both their bottom line and the planet."
++          ]
++        },
++        {
++          heading: "Cloud Optimization for Sustainability",
++          paragraphs: [
++            "Cloud computing offers inherent efficiency advantages through resource sharing and economies of scale. We help organizations optimize their cloud usage to minimize waste, right-size resources, and take advantage of green cloud providers.",
++            "Our cloud optimization services include workload analysis, cost management, and migration strategies that reduce both expenses and environmental footprint."
++          ]
++        }
++      ],
++      highlights: [
++        "30-50% reduction in IT energy consumption",
++        "Extended hardware lifecycles reducing e-waste",
++        "Carbon footprint reporting and tracking",
++        "Green certifications and compliance support"
++      ],
++      conclusion: "Sustainable IT is good for the environment and good for business. Ardent Prime Innovations helps organizations achieve their sustainability objectives without compromising on performance or capability. Together, we can build a technology future that preserves our planet for generations to come."
++    }
++  },
++  "5": {
++    title: "Comprehensive Physical Security Systems",
++    category: "Physical Security",
++    date: "September 15, 2025",
++    author: "Ardent Prime Team",
++    image: "/physical-security-cctv-access-control.jpg",
++    excerpt: "Implementing state-of-the-art CCTV, access control, and perimeter security solutions for complete facility protection.",
++    content: {
++      intro: "Physical security remains a critical concern for businesses of all sizes. From protecting employees and visitors to safeguarding assets and intellectual property, comprehensive security systems are essential. Ardent Prime Innovations delivers integrated physical security solutions that provide complete facility protection while maintaining operational efficiency.",
++      sections: [
++        {
++          heading: "Advanced Video Surveillance Systems",
++          paragraphs: [
++            "Modern IP-based CCTV systems offer capabilities far beyond simple recording. High-definition cameras with intelligent analytics can detect unusual activity, recognize faces, read license plates, and alert security personnel to potential threats in real-time.",
++            "We design surveillance systems that provide comprehensive coverage while respecting privacy concerns. Our solutions include strategic camera placement, appropriate retention policies, and secure access controls for recorded footage."
++          ]
++        },
++        {
++          heading: "Access Control and Identity Management",
++          paragraphs: [
++            "Controlling who can enter your facilities and specific areas within them is fundamental to security. Our access control solutions range from card-based systems to advanced biometrics, all integrated with centralized management platforms.",
++            "We implement role-based access policies, time-based restrictions, and detailed audit logging. Integration with HR systems ensures that access permissions stay current as employees join, move within, or leave the organization."
++          ]
++        },
++        {
++          heading: "Integrated Security Operations",
++          paragraphs: [
++            "The most effective security comes from integrated systems that work together. We design solutions where video surveillance, access control, intrusion detection, and fire safety systems share information and coordinate responses.",
++            "Central monitoring stations provide security personnel with unified views of facility status, enabling rapid response to any incident. Automated protocols ensure consistent, appropriate responses even during off-hours."
++          ]
++        }
++      ],
++      highlights: [
++        "4K and higher resolution cameras with intelligent analytics",
++        "Multi-factor authentication including biometric options",
++        "24/7 remote monitoring and rapid response capabilities",
++        "Seamless integration with existing building systems"
++      ],
++      conclusion: "Physical security is too important to leave to chance. Ardent Prime Innovations brings the expertise and technology needed to protect your people, property, and assets. Contact us for a security assessment and discover how we can enhance your facility protection."
++    }
++  },
++  "6": {
++    title: "Success Story: Digital Transformation Journey",
++    category: "Case Study",
++    date: "September 10, 2025",
++    author: "Ardent Prime Team",
++    image: "/business-team-technology-success.jpg",
++    excerpt: "How we helped a growing startup scale their operations with enterprise-grade IT solutions.",
++    content: {
++      intro: "When TechVenture Solutions approached Ardent Prime Innovations, they were a 50-person startup experiencing explosive growth. Their existing IT infrastructure—a collection of consumer-grade equipment and ad-hoc solutions—couldn't keep pace with their ambitions. This is the story of their transformation into a technology-enabled enterprise.",
++      sections: [
++        {
++          heading: "The Challenge",
++          paragraphs: [
++            "TechVenture faced multiple IT challenges common to fast-growing companies. Their network was unreliable, with frequent outages disrupting productivity. Security was a constant concern, with no dedicated personnel or proper protocols. Data was scattered across personal devices and cloud services without central management or backup.",
++            "Most critically, their infrastructure couldn't scale. Every new hire meant scrambling to provision equipment and accounts. The IT burden was falling on developers and executives who should have been focused on core business activities."
++          ]
++        },
++        {
++          heading: "Our Solution",
++          paragraphs: [
++            "Ardent Prime Innovations designed a comprehensive IT transformation spanning infrastructure, security, and operations. We started with a thorough assessment, documenting existing systems and gathering requirements from stakeholders across the organization.",
++            "The implementation included a new enterprise network with redundant connectivity, centralized server infrastructure for critical applications, a comprehensive security stack with 24/7 monitoring, and cloud integration for collaboration and productivity tools."
++          ]
++        },
++        {
++          heading: "The Results",
++          paragraphs: [
++            "Within six months of implementation, TechVenture had transformed their IT capabilities. Network uptime improved from 95% to 99.9%. Security incidents dropped by 80%. New employee onboarding time decreased from three days to four hours.",
++            "Most importantly, the technology foundation we built enabled continued growth. TechVenture has since doubled their headcount and expanded to three offices, all supported by infrastructure designed to scale."
++          ]
++        }
++      ],
++      highlights: [
++        "99.9% network uptime (up from 95%)",
++        "80% reduction in security incidents",
++        "New hire onboarding reduced from 3 days to 4 hours",
++        "Infrastructure supporting 3x growth without overhaul"
++      ],
++      conclusion: "TechVenture's story demonstrates what's possible when growing companies partner with the right IT provider. Ardent Prime Innovations doesn't just solve today's problems—we build foundations for tomorrow's success. If your organization is ready for digital transformation, we're ready to help."
++    }
++  }
++}
+diff --git a/app/news/[id]/layout.tsx b/app/news/[id]/layout.tsx
+new file mode 100644
+index 0000000..3af99b2
+--- /dev/null
++++ b/app/news/[id]/layout.tsx
+@@ -0,0 +1,31 @@
++import { headers } from "next/headers"
++import { ArticleSchema } from "@/components/structured-data"
++import { articlesData, toISODate } from "./articles-data"
++
++export default async function NewsArticleLayout({
++  children,
++  params,
++}: {
++  children: React.ReactNode
++  params: { id: string }
++}) {
++  const article = articlesData[params.id]
++  const nonce = (await headers()).get("x-nonce") ?? undefined
++
++  return (
++    <>
++      {article && (
++        <ArticleSchema
++          headline={article.title}
++          description={article.excerpt}
++          image={article.image}
++          datePublished={toISODate(article.date)}
++          author={article.author}
++          url={`https://ardentprime.com/news/${params.id}`}
++          nonce={nonce}
++        />
++      )}
++      {children}
++    </>
++  )
++}
+diff --git a/app/news/[id]/page.tsx b/app/news/[id]/page.tsx
+index e8c47e7..d900d5e 100644
+--- a/app/news/[id]/page.tsx
++++ b/app/news/[id]/page.tsx
+@@ -2,282 +2,14 @@
+ 
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+-import { ArticleSchema } from "@/components/structured-data"
+ import { ScrollToTop } from "@/components/scroll-to-top"
+ import { Calendar, ArrowLeft, User } from "lucide-react"
+ import Link from "next/link"
+ import { Button } from "@/components/ui/button"
+ import { useEffect } from "react"
+ import { notFound } from "next/navigation"
++import { articlesData } from "./articles-data"
+ 
+-// Helper function to convert date string to ISO format
+-function toISODate(dateStr: string): string {
+-  const date = new Date(dateStr)
+-  return date.toISOString().split("T")[0]
+-}
+-
+-// Full article data for all 6 news items
+-const articlesData: Record<string, {
+-  title: string
+-  category: string
+-  date: string
+-  author: string
+-  image: string
+-  excerpt: string
+-  content: {
+-    intro: string
+-    sections: { heading: string; paragraphs: string[] }[]
+-    highlights: string[]
+-    conclusion: string
+-  }
+-}> = {
+-  "1": {
+-    title: "AI-Powered Innovation in Enterprise IT",
+-    category: "Innovation",
+-    date: "October 1, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/ai-monitoring-dashboard-technology.jpg",
+-    excerpt: "Discover how our latest AI-enhanced solutions are revolutionizing business operations and driving unprecedented efficiency.",
+-    content: {
+-      intro: "Artificial Intelligence is no longer a futuristic concept—it's transforming how businesses operate today. At Ardent Prime Innovations, we're at the forefront of integrating AI-powered solutions into enterprise IT infrastructure, helping our clients achieve unprecedented levels of efficiency, security, and innovation.",
+-      sections: [
+-        {
+-          heading: "The AI Revolution in Business Operations",
+-          paragraphs: [
+-            "Modern enterprises generate massive amounts of data every day. Traditional systems struggle to process, analyze, and act on this information in real-time. AI-powered solutions change this paradigm entirely, enabling businesses to make data-driven decisions faster than ever before.",
+-            "Our AI integration services help businesses automate routine tasks, predict maintenance needs before failures occur, and identify security threats in milliseconds. This proactive approach reduces downtime, cuts operational costs, and frees your team to focus on strategic initiatives."
+-          ]
+-        },
+-        {
+-          heading: "Intelligent Monitoring and Predictive Analytics",
+-          paragraphs: [
+-            "Our AI-enhanced monitoring systems continuously analyze network traffic, system performance, and user behavior patterns. Machine learning algorithms detect anomalies that human operators might miss, alerting IT teams to potential issues before they impact operations.",
+-            "Predictive analytics take this further by forecasting future trends based on historical data. Whether it's predicting storage capacity needs, identifying peak usage periods, or anticipating hardware failures, AI gives businesses the foresight to plan proactively."
+-          ]
+-        },
+-        {
+-          heading: "Security Enhancement Through AI",
+-          paragraphs: [
+-            "Cybersecurity threats evolve constantly, making traditional rule-based security systems increasingly inadequate. AI-powered security solutions learn from each interaction, continuously improving their ability to detect and respond to new threats.",
+-            "Our implementations include AI-driven threat detection, automated incident response, and behavioral analysis that identifies suspicious activities even when they don't match known attack patterns."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "Up to 40% reduction in IT operational costs through automation",
+-        "99.9% threat detection accuracy with AI-powered security",
+-        "Predictive maintenance reducing unplanned downtime by 60%",
+-        "Real-time analytics enabling faster business decisions"
+-      ],
+-      conclusion: "The integration of AI into enterprise IT isn't just about keeping pace with technology—it's about gaining a competitive advantage. Ardent Prime Innovations is committed to helping businesses harness the power of AI to transform their operations. Contact us to learn how AI can revolutionize your IT infrastructure."
+-    }
+-  },
+-  "2": {
+-    title: "Advanced Cybersecurity Solutions for Modern Threats",
+-    category: "Cybersecurity",
+-    date: "September 28, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/cybersecurity-network-protection.png",
+-    excerpt: "Explore our cutting-edge cybersecurity infrastructure protecting Fortune 500 companies from evolving digital threats.",
+-    content: {
+-      intro: "In today's interconnected world, cybersecurity is not optional—it's essential for business survival. With cyber attacks becoming more sophisticated and frequent, organizations need comprehensive security strategies that go beyond traditional firewalls and antivirus software. Ardent Prime Innovations delivers enterprise-grade cybersecurity solutions that protect your most valuable assets.",
+-      sections: [
+-        {
+-          heading: "The Evolving Threat Landscape",
+-          paragraphs: [
+-            "Cyber threats have evolved dramatically in recent years. Ransomware attacks have increased by 150% in the past year alone, with average ransom demands exceeding $200,000. Phishing campaigns have become more targeted and convincing, while nation-state actors pose sophisticated threats to critical infrastructure.",
+-            "Traditional perimeter-based security is no longer sufficient. Modern threats require a multi-layered approach that protects data at every point—from the network edge to individual endpoints, from cloud services to mobile devices."
+-          ]
+-        },
+-        {
+-          heading: "Zero Trust Architecture",
+-          paragraphs: [
+-            "We implement Zero Trust security models that assume no user or system should be automatically trusted, regardless of their location. Every access request is verified, validated, and secured before granting permission.",
+-            "This approach includes micro-segmentation, continuous authentication, and least-privilege access controls. The result is a security posture that minimizes attack surfaces and limits the potential damage of any breach."
+-          ]
+-        },
+-        {
+-          heading: "24/7 Security Operations",
+-          paragraphs: [
+-            "Our Security Operations Center provides round-the-clock monitoring and incident response. Skilled analysts work alongside AI-powered tools to detect threats, investigate incidents, and coordinate responses in real-time.",
+-            "We combine threat intelligence feeds, behavioral analytics, and automated response capabilities to identify and neutralize threats before they can cause damage."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "Complete protection across network, endpoint, and cloud environments",
+-        "24/7 security monitoring with sub-minute threat response times",
+-        "Compliance support for HIPAA, PCI-DSS, SOC 2, and more",
+-        "Regular security assessments and penetration testing"
+-      ],
+-      conclusion: "Cybersecurity is not a one-time investment—it's an ongoing commitment to protecting your business. Ardent Prime Innovations provides the expertise, technology, and vigilance needed to defend against today's threats and prepare for tomorrow's challenges. Partner with us to build a security foundation that protects your business now and in the future."
+-    }
+-  },
+-  "3": {
+-    title: "Next-Generation Network Infrastructure",
+-    category: "Infrastructure",
+-    date: "September 25, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/modern-data-center-servers.jpg",
+-    excerpt: "Exploring cutting-edge technologies that are transforming how businesses build and maintain their IT infrastructure.",
+-    content: {
+-      intro: "The foundation of every successful digital business is robust, scalable network infrastructure. As organizations embrace cloud computing, remote work, and IoT devices, traditional network architectures struggle to keep pace. Ardent Prime Innovations specializes in designing and implementing next-generation network infrastructure that meets the demands of modern business.",
+-      sections: [
+-        {
+-          heading: "Software-Defined Networking (SDN)",
+-          paragraphs: [
+-            "Software-defined networking separates the control plane from the data plane, enabling centralized management and dynamic configuration of network resources. This approach provides unprecedented flexibility, allowing networks to adapt to changing business needs in real-time.",
+-            "SDN reduces operational complexity, improves security through consistent policy enforcement, and enables automation of routine network tasks. Organizations can provision new services in minutes rather than days."
+-          ]
+-        },
+-        {
+-          heading: "High-Performance Data Center Solutions",
+-          paragraphs: [
+-            "Modern data centers require infrastructure that can handle massive data volumes with minimal latency. We design and implement high-performance computing environments with redundant power, cooling, and connectivity.",
+-            "Our solutions include high-density server deployments, enterprise storage systems, and networking fabrics capable of handling 100Gbps and beyond. Every implementation is optimized for reliability, efficiency, and scalability."
+-          ]
+-        },
+-        {
+-          heading: "Edge Computing and IoT Integration",
+-          paragraphs: [
+-            "As IoT devices proliferate and real-time processing becomes critical, edge computing has emerged as an essential component of network architecture. Processing data closer to its source reduces latency, saves bandwidth, and improves application performance.",
+-            "We help organizations extend their infrastructure to the edge while maintaining security, manageability, and integration with central systems."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "99.99% uptime with redundant, resilient network designs",
+-        "Scalable architecture supporting 10x growth without overhaul",
+-        "Reduced operational costs through automation and efficiency",
+-        "Seamless integration of cloud, on-premises, and edge resources"
+-      ],
+-      conclusion: "Network infrastructure is the backbone of digital transformation. With Ardent Prime Innovations as your partner, you can build an infrastructure foundation that supports today's operations while preparing for tomorrow's opportunities. Contact us to discuss your infrastructure modernization needs."
+-    }
+-  },
+-  "4": {
+-    title: "Sustainable IT: Technology for a Greener Future",
+-    category: "Sustainability",
+-    date: "September 20, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/green-technology-sustainable-computing.jpg",
+-    excerpt: "Our commitment to eco-friendly technology solutions that reduce carbon footprint while maximizing efficiency.",
+-    content: {
+-      intro: "Environmental sustainability is no longer just a corporate responsibility—it's a business imperative. Organizations worldwide are recognizing that green IT practices not only reduce environmental impact but also deliver significant cost savings and operational benefits. Ardent Prime Innovations is committed to helping businesses achieve their sustainability goals through intelligent technology solutions.",
+-      sections: [
+-        {
+-          heading: "Energy-Efficient Infrastructure Design",
+-          paragraphs: [
+-            "Data centers and IT equipment consume enormous amounts of energy. Through thoughtful design and modern technologies, we help organizations dramatically reduce their energy consumption while maintaining or improving performance.",
+-            "Our approach includes server consolidation and virtualization, efficient cooling systems, power management optimization, and strategic use of renewable energy sources. These measures can reduce IT energy consumption by 30-50%."
+-          ]
+-        },
+-        {
+-          heading: "Hardware Lifecycle Management",
+-          paragraphs: [
+-            "The environmental impact of IT extends beyond energy consumption to include the manufacturing, shipping, and disposal of hardware. We implement responsible lifecycle management practices that maximize equipment lifespan and ensure proper recycling.",
+-            "Our refresh programs balance the efficiency gains of new hardware against the environmental cost of replacement, helping clients make informed decisions that benefit both their bottom line and the planet."
+-          ]
+-        },
+-        {
+-          heading: "Cloud Optimization for Sustainability",
+-          paragraphs: [
+-            "Cloud computing offers inherent efficiency advantages through resource sharing and economies of scale. We help organizations optimize their cloud usage to minimize waste, right-size resources, and take advantage of green cloud providers.",
+-            "Our cloud optimization services include workload analysis, cost management, and migration strategies that reduce both expenses and environmental footprint."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "30-50% reduction in IT energy consumption",
+-        "Extended hardware lifecycles reducing e-waste",
+-        "Carbon footprint reporting and tracking",
+-        "Green certifications and compliance support"
+-      ],
+-      conclusion: "Sustainable IT is good for the environment and good for business. Ardent Prime Innovations helps organizations achieve their sustainability objectives without compromising on performance or capability. Together, we can build a technology future that preserves our planet for generations to come."
+-    }
+-  },
+-  "5": {
+-    title: "Comprehensive Physical Security Systems",
+-    category: "Physical Security",
+-    date: "September 15, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/physical-security-cctv-access-control.jpg",
+-    excerpt: "Implementing state-of-the-art CCTV, access control, and perimeter security solutions for complete facility protection.",
+-    content: {
+-      intro: "Physical security remains a critical concern for businesses of all sizes. From protecting employees and visitors to safeguarding assets and intellectual property, comprehensive security systems are essential. Ardent Prime Innovations delivers integrated physical security solutions that provide complete facility protection while maintaining operational efficiency.",
+-      sections: [
+-        {
+-          heading: "Advanced Video Surveillance Systems",
+-          paragraphs: [
+-            "Modern IP-based CCTV systems offer capabilities far beyond simple recording. High-definition cameras with intelligent analytics can detect unusual activity, recognize faces, read license plates, and alert security personnel to potential threats in real-time.",
+-            "We design surveillance systems that provide comprehensive coverage while respecting privacy concerns. Our solutions include strategic camera placement, appropriate retention policies, and secure access controls for recorded footage."
+-          ]
+-        },
+-        {
+-          heading: "Access Control and Identity Management",
+-          paragraphs: [
+-            "Controlling who can enter your facilities and specific areas within them is fundamental to security. Our access control solutions range from card-based systems to advanced biometrics, all integrated with centralized management platforms.",
+-            "We implement role-based access policies, time-based restrictions, and detailed audit logging. Integration with HR systems ensures that access permissions stay current as employees join, move within, or leave the organization."
+-          ]
+-        },
+-        {
+-          heading: "Integrated Security Operations",
+-          paragraphs: [
+-            "The most effective security comes from integrated systems that work together. We design solutions where video surveillance, access control, intrusion detection, and fire safety systems share information and coordinate responses.",
+-            "Central monitoring stations provide security personnel with unified views of facility status, enabling rapid response to any incident. Automated protocols ensure consistent, appropriate responses even during off-hours."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "4K and higher resolution cameras with intelligent analytics",
+-        "Multi-factor authentication including biometric options",
+-        "24/7 remote monitoring and rapid response capabilities",
+-        "Seamless integration with existing building systems"
+-      ],
+-      conclusion: "Physical security is too important to leave to chance. Ardent Prime Innovations brings the expertise and technology needed to protect your people, property, and assets. Contact us for a security assessment and discover how we can enhance your facility protection."
+-    }
+-  },
+-  "6": {
+-    title: "Success Story: Digital Transformation Journey",
+-    category: "Case Study",
+-    date: "September 10, 2025",
+-    author: "Ardent Prime Team",
+-    image: "/business-team-technology-success.jpg",
+-    excerpt: "How we helped a growing startup scale their operations with enterprise-grade IT solutions.",
+-    content: {
+-      intro: "When TechVenture Solutions approached Ardent Prime Innovations, they were a 50-person startup experiencing explosive growth. Their existing IT infrastructure—a collection of consumer-grade equipment and ad-hoc solutions—couldn't keep pace with their ambitions. This is the story of their transformation into a technology-enabled enterprise.",
+-      sections: [
+-        {
+-          heading: "The Challenge",
+-          paragraphs: [
+-            "TechVenture faced multiple IT challenges common to fast-growing companies. Their network was unreliable, with frequent outages disrupting productivity. Security was a constant concern, with no dedicated personnel or proper protocols. Data was scattered across personal devices and cloud services without central management or backup.",
+-            "Most critically, their infrastructure couldn't scale. Every new hire meant scrambling to provision equipment and accounts. The IT burden was falling on developers and executives who should have been focused on core business activities."
+-          ]
+-        },
+-        {
+-          heading: "Our Solution",
+-          paragraphs: [
+-            "Ardent Prime Innovations designed a comprehensive IT transformation spanning infrastructure, security, and operations. We started with a thorough assessment, documenting existing systems and gathering requirements from stakeholders across the organization.",
+-            "The implementation included a new enterprise network with redundant connectivity, centralized server infrastructure for critical applications, a comprehensive security stack with 24/7 monitoring, and cloud integration for collaboration and productivity tools."
+-          ]
+-        },
+-        {
+-          heading: "The Results",
+-          paragraphs: [
+-            "Within six months of implementation, TechVenture had transformed their IT capabilities. Network uptime improved from 95% to 99.9%. Security incidents dropped by 80%. New employee onboarding time decreased from three days to four hours.",
+-            "Most importantly, the technology foundation we built enabled continued growth. TechVenture has since doubled their headcount and expanded to three offices, all supported by infrastructure designed to scale."
+-          ]
+-        }
+-      ],
+-      highlights: [
+-        "99.9% network uptime (up from 95%)",
+-        "80% reduction in security incidents",
+-        "New hire onboarding reduced from 3 days to 4 hours",
+-        "Infrastructure supporting 3x growth without overhaul"
+-      ],
+-      conclusion: "TechVenture's story demonstrates what's possible when growing companies partner with the right IT provider. Ardent Prime Innovations doesn't just solve today's problems—we build foundations for tomorrow's success. If your organization is ready for digital transformation, we're ready to help."
+-    }
+-  }
+-}
+ 
+ export default function NewsArticlePage({ params }: { params: { id: string } }) {
+   const article = articlesData[params.id]
+@@ -292,15 +24,7 @@ export default function NewsArticlePage({ params }: { params: { id: string } })
+ 
+   return (
+     <>
+-      {/* Article Schema for SEO rich snippets */}
+-      <ArticleSchema
+-        headline={article.title}
+-        description={article.excerpt}
+-        image={article.image}
+-        datePublished={toISODate(article.date)}
+-        author={article.author}
+-        url={`https://ardentprime.com/news/${params.id}`}
+-      />
++      {/* Article Schema is rendered server-side in layout.tsx with a real CSP nonce */}
+       <Header />
+       <main className="min-h-screen pt-32 pb-16">
+         <div className="container mx-auto px-4 max-w-4xl">
+diff --git a/app/partners/[slug]/layout.tsx b/app/partners/[slug]/layout.tsx
+new file mode 100644
+index 0000000..7b809bb
+--- /dev/null
++++ b/app/partners/[slug]/layout.tsx
+@@ -0,0 +1,32 @@
++import { headers } from "next/headers"
++import { VideoSchema } from "@/components/structured-data"
++import { partnersData, getYouTubeVideoId } from "./partners-data"
++
++export default async function PartnerLayout({
++  children,
++  params,
++}: {
++  children: React.ReactNode
++  params: { slug: string }
++}) {
++  const partner = partnersData[params.slug]
++  const videoId = partner?.videoUrl ? getYouTubeVideoId(partner.videoUrl) : null
++  const nonce = (await headers()).get("x-nonce") ?? undefined
++
++  return (
++    <>
++      {partner?.videoUrl && videoId && (
++        <VideoSchema
++          name={`${partner.name} Overview Video`}
++          description={partner.description}
++          thumbnailUrl={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
++          uploadDate="2024-01-01"
++          contentUrl={partner.videoUrl}
++          embedUrl={`https://www.youtube.com/embed/${videoId}`}
++          nonce={nonce}
++        />
++      )}
++      {children}
++    </>
++  )
++}
+diff --git a/app/partners/[slug]/page.tsx b/app/partners/[slug]/page.tsx
+index e6bb621..a22ac5a 100644
+--- a/app/partners/[slug]/page.tsx
++++ b/app/partners/[slug]/page.tsx
+@@ -2,299 +2,14 @@
+ 
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+-import { VideoSchema } from "@/components/structured-data"
+ import { notFound, useRouter } from "next/navigation"
+ import { Button } from "@/components/ui/button"
+ import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react"
+ import { VideoEmbed } from "@/components/video-embed"
+ import { useEffect } from "react"
+ import Link from "next/link"
++import { partnersData } from "./partners-data"
+ 
+-// Helper function to extract YouTube video ID
+-function getYouTubeVideoId(url: string): string | null {
+-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+-  const match = url.match(regExp)
+-  return match && match[2].length === 11 ? match[2] : null
+-}
+-
+-// Partner data
+-const partnersData: Record<
+-  string,
+-  {
+-    name: string
+-    description: string
+-    logo: string
+-    website: string
+-    videoUrl?: string
+-    solutions: string[]
+-    partnership: string
+-    benefits: string[]
+-  }
+-> = {
+-  hp: {
+-    name: "HP",
+-    description: "Global leader in personal computing and printing solutions for businesses.",
+-    logo: "/images/partners/hp-logo.png",
+-    website: "https://www.hp.com",
+-    videoUrl: "https://www.youtube.com/watch?v=KdB4v9ssdIY",
+-    solutions: [
+-      "Enterprise Workstations",
+-      "Business Laptops & Desktops",
+-      "Commercial Printers",
+-      "Managed Print Services",
+-    ],
+-    partnership:
+-      "Ardent Prime Innovations has partnered with HP to deliver reliable computing and printing solutions to our clients. This partnership enables us to provide enterprise-grade hardware with comprehensive support and maintenance.",
+-    benefits: [
+-      "Access to latest HP technologies",
+-      "Priority technical support",
+-      "Competitive pricing for our clients",
+-      "Joint training and certification programs",
+-    ],
+-  },
+-  "ingram-micro": {
+-    name: "Ingram Micro",
+-    description: "World's largest technology distributor and supply chain solutions provider.",
+-    logo: "/images/partners/ingram-micro-logo.png",
+-    website: "https://www.ingrammicro.com",
+-    videoUrl: "https://www.youtube.com/watch?v=BejEZFMMBJk",
+-    solutions: ["Technology Distribution", "Supply Chain Services", "Cloud Solutions", "Lifecycle Services"],
+-    partnership:
+-      "Our strategic partnership with Ingram Micro ensures we have access to a comprehensive portfolio of technology products and services to meet all client needs.",
+-    benefits: [
+-      "Extensive product portfolio",
+-      "Flexible financing options",
+-      "Expert technical resources",
+-      "Global logistics support",
+-    ],
+-  },
+-  sectigo: {
+-    name: "Sectigo",
+-    description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
+-    logo: "/images/partners/sectigo-logo.png",
+-    website: "https://www.sectigo.com",
+-    videoUrl: "https://www.youtube.com/watch?v=X5K6i5r7gz0",
+-    solutions: [
+-      "SSL/TLS Certificates",
+-      "Automated Certificate Management",
+-      "Web Application Firewall (WAF)",
+-      "Code Signing Certificates",
+-    ],
+-    partnership:
+-      "Ardent Prime Innovations has partnered with Sectigo to provide our clients with industry-leading SSL/TLS certificates and comprehensive web security solutions. This partnership ensures that our clients' websites, applications, and digital communications are protected with the highest level of encryption and trust.",
+-    benefits: [
+-      "Trusted SSL/TLS certificates recognized by all major browsers",
+-      "Automated certificate lifecycle management",
+-      "Enhanced web application security with WAF protection",
+-      "Comprehensive code signing for software integrity",
+-    ],
+-  },
+-  pelco: {
+-    name: "Pelco",
+-    description: "Industry leader in security camera systems and video surveillance solutions.",
+-    logo: "/images/partners/pelco-logo.png",
+-    website: "https://www.pelco.com",
+-    videoUrl: "https://www.youtube.com/watch?v=B_lw-lMvQnU",
+-    solutions: ["IP Security Cameras", "Video Management Systems", "Analytics Software", "PTZ Camera Systems"],
+-    partnership:
+-      "Through our partnership with Pelco, we provide comprehensive video surveillance solutions to protect your facilities and assets with cutting-edge technology.",
+-    benefits: [
+-      "High-quality imaging technology",
+-      "Advanced video analytics",
+-      "Scalable solutions",
+-      "Integration capabilities",
+-    ],
+-  },
+-  avigilon: {
+-    name: "Avigilon",
+-    description: "Advanced AI-powered video security and analytics solutions provider.",
+-    logo: "/images/partners/avigilon-logo.png",
+-    website: "https://www.avigilon.com",
+-    videoUrl: "https://www.youtube.com/watch?v=_4OWxx9RTPw",
+-    solutions: [
+-      "AI-Powered Video Analytics",
+-      "High-Definition Cameras",
+-      "Access Control Integration",
+-      "Cloud Video Management",
+-    ],
+-    partnership:
+-      "Avigilon collaboration allows us to deliver state-of-the-art AI-powered video security that enhances threat detection and response capabilities.",
+-    benefits: [
+-      "Advanced AI analytics",
+-      "Proactive threat detection",
+-      "Cloud-native architecture",
+-      "Seamless integration",
+-    ],
+-  },
+-  axis: {
+-    name: "Axis Communications",
+-    description: "Global leader in network video and access control solutions.",
+-    logo: "/images/partners/axis-logo.png",
+-    website: "https://www.axis.com",
+-    videoUrl: "https://www.youtube.com/watch?v=FnQasRVqI34",
+-    solutions: ["Network Cameras", "Video Encoders", "Access Control Systems", "Audio Systems"],
+-    partnership:
+-      "Our alliance with Axis brings enterprise-grade network video solutions that provide exceptional image quality and reliability.",
+-    benefits: [
+-      "Industry-leading image quality",
+-      "Open platform architecture",
+-      "Cybersecurity features",
+-      "Wide product range",
+-    ],
+-  },
+-  "motorola-solutions": {
+-    name: "Motorola Solutions",
+-    description: "Trusted provider of mission-critical communication and security solutions.",
+-    logo: "/images/partners/motorola-solutions-logo.png",
+-    website: "https://www.motorolasolutions.com",
+-    videoUrl: "https://youtu.be/AGmoQOVSPkE?si=oWxuq0Ji9D7Wduzr",
+-    solutions: [
+-      "Two-Way Radio Systems",
+-      "Video Security Solutions",
+-      "Command Center Software",
+-      "Emergency Response Systems",
+-    ],
+-    partnership:
+-      "Partner with Motorola Solutions ensures your critical communications and security systems are reliable and interoperable.",
+-    benefits: [
+-      "Mission-critical reliability",
+-      "Integrated communication",
+-      "Advanced dispatch solutions",
+-      "Proven track record",
+-    ],
+-  },
+-  cisco: {
+-    name: "Cisco",
+-    description: "Global technology leader in networking, security, and collaboration.",
+-    logo: "/images/partners/cisco-logo.png",
+-    website: "https://www.cisco.com",
+-    videoUrl: "https://www.youtube.com/watch?v=GbbWVZDUgoI",
+-    solutions: ["Network Infrastructure", "Cybersecurity Solutions", "Collaboration Tools", "Data Center Technologies"],
+-    partnership:
+-      "Together with Cisco, we offer comprehensive networking and security solutions that form the backbone of modern IT infrastructure.",
+-    benefits: [
+-      "Industry-leading networking",
+-      "Advanced security features",
+-      "Scalable architecture",
+-      "Global support network",
+-    ],
+-    
+-  },
+-  microsoft: {
+-    name: "Microsoft",
+-    description: "Leading technology company providing cloud, productivity, and AI solutions.",
+-    logo: "/images/partners/microsoft-logo.png",
+-    website: "https://www.microsoft.com",
+-    videoUrl: "https://www.youtube.com/watch?v=1aXrgLlqdbg",
+-    solutions: ["Microsoft 365", "Azure Cloud Services", "Windows Server", "Dynamics 365"],
+-    partnership:
+-      "Our Microsoft partnership enables us to deliver powerful productivity and cloud solutions that transform how businesses operate.",
+-    benefits: [
+-      "Complete productivity suite",
+-      "Enterprise cloud platform",
+-      "Advanced AI capabilities",
+-      "Seamless integration",
+-    ],
+-  },
+-  paloalto: {
+-    name: "Palo Alto Networks",
+-    description: "Cybersecurity leader providing next-generation firewall and cloud security.",
+-    logo: "/images/partners/paloalto-logo.png",
+-    website: "https://www.paloaltonetworks.com",
+-    videoUrl: "https://www.youtube.com/watch?v=fABJuCYMAyY",
+-    solutions: ["Next-Generation Firewalls", "Cloud Security", "Threat Intelligence", "Security Operations"],
+-    partnership:
+-      "Palo Alto Networks advanced security solutions protect your network and cloud infrastructure from sophisticated cyber threats.",
+-    benefits: [
+-      "AI-powered threat prevention",
+-      "Zero Trust architecture",
+-      "Cloud-native security",
+-      "Automated response",
+-    ],
+-  },
+-  milestone: {
+-    name: "Milestone Systems",
+-    description: "Open platform video management software for IP video surveillance.",
+-    logo: "/images/partners/milestone-logo.png",
+-    website: "https://www.milestonesys.com",
+-    videoUrl: "https://www.youtube.com/watch?v=mICW-oLDk2M",
+-    solutions: ["XProtect VMS", "Video Analytics", "Camera Integration", "Mobile Client Solutions"],
+-    partnership:
+-      "Through Milestone partnership, we provide flexible and scalable video management solutions that work with hundreds of camera types.",
+-    benefits: ["Open platform flexibility", "Unlimited scalability", "Extensive integrations", "Mobile accessibility"],
+-  },
+-  vivotek: {
+-    name: "Vivotek",
+-    description: "Professional IP surveillance solutions with high-quality network cameras.",
+-    logo: "/images/partners/vivotek-logo.png",
+-    website: "https://www.vivotek.com",
+-    videoUrl: "https://www.youtube.com/watch?v=kKHg74uBg1Q",
+-    solutions: ["Network Cameras", "Video Servers", "Recording Solutions", "Software Integration"],
+-    partnership:
+-      "Vivotek collaboration enables us to offer cost-effective IP surveillance solutions with professional-grade features.",
+-    benefits: ["High-quality imaging", "Weatherproof designs", "Smart stream technology", "Value pricing"],
+-  },
+-  reolink: {
+-    name: "Reolink",
+-    description: "Innovative security camera systems for home and business applications.",
+-    logo: "/images/partners/reolink-logo.png",
+-    website: "https://www.reolink.com",
+-    videoUrl: "https://www.youtube.com/watch?v=IkRMhWVlFp8",
+-    solutions: ["PoE Camera Systems", "Wireless Security Cameras", "NVR Solutions", "Solar-Powered Cameras"],
+-    partnership:
+-      "Our partnership with Reolink provides accessible and reliable security solutions for small to medium-sized businesses.",
+-    benefits: ["Easy installation", "Affordable pricing", "Mobile app access", "Local storage options"],
+-  },
+-  fortinet: {
+-    name: "Fortinet",
+-    description: "Global leader in cybersecurity solutions and unified threat management.",
+-    logo: "/images/partners/fortinet-logo.png",
+-    website: "https://www.fortinet.com",
+-    videoUrl: "https://www.youtube.com/watch?v=o0btrmZcmGI",
+-    solutions: ["FortiGate Firewalls", "Secure SD-WAN", "Endpoint Security", "Security Fabric"],
+-    partnership:
+-      "Fortinet partnership delivers comprehensive cybersecurity solutions that protect your network with industry-leading threat protection.",
+-    benefits: [
+-      "Integrated security fabric",
+-      "High-performance firewalls",
+-      "AI-powered detection",
+-      "Centralized management",
+-    ],
+-  },
+-  "schneider-electric": {
+-    name: "Schneider Electric",
+-    description: "Global specialist in energy management and industrial automation.",
+-    logo: "/images/partners/schneider-electric-logo.png",
+-    website: "https://www.se.com",
+-    videoUrl: "https://www.youtube.com/watch?v=mfWWvpEa3Us",
+-    solutions: ["UPS Systems", "Power Distribution", "Data Center Infrastructure", "Building Automation"],
+-    partnership:
+-      "Through Schneider Electric, we provide reliable power management and automation solutions for critical infrastructure.",
+-    benefits: ["Energy efficiency", "Reliable power protection", "Smart building integration", "Sustainability focus"],
+-  },
+-  "td-synnex": {
+-    name: "TD SYNNEX",
+-    description: "Leading IT distributor and solutions aggregator for technology ecosystem.",
+-    logo: "/images/partners/td-synnex-logo.png",
+-    website: "https://www.tdsynnex.com",
+-    videoUrl: "https://www.youtube.com/watch?v=DOosZShL-w0",
+-    solutions: ["Technology Distribution", "Cloud Services", "Endpoint Solutions", "Business Process Services"],
+-    partnership:
+-      "Our alliance with TD SYNNEX provides access to comprehensive technology solutions and value-added services for our clients.",
+-    benefits: ["Broad product portfolio", "Cloud marketplace", "Financial services", "Technical expertise"],
+-  },
+-  "dell-technologies": {
+-    name: "Dell Technologies",
+-    description: "Global technology leader in computing, storage, and infrastructure solutions.",
+-    logo: "/images/partners/dell-technologies-logo.png",
+-    website: "https://www.delltechnologies.com",
+-    videoUrl: "https://www.youtube.com/watch?v=X0pZDGMKhsk",
+-    solutions: ["PowerEdge Servers", "Storage Solutions", "Networking Equipment", "Workstations"],
+-    partnership:
+-      "Dell Technologies partnership enables us to deliver enterprise-grade infrastructure solutions backed by world-class support.",
+-    benefits: ["Enterprise-grade hardware", "Comprehensive support", "Scalable solutions", "Proven reliability"],
+-  },
+-}
+ 
+ export default function PartnerPage({ params }: { params: { slug: string } }) {
+   const partner = partnersData[params.slug]
+@@ -308,21 +23,9 @@ export default function PartnerPage({ params }: { params: { slug: string } }) {
+     window.scrollTo({ top: 0, behavior: "instant" })
+   }, [])
+ 
+-  const videoId = partner.videoUrl ? getYouTubeVideoId(partner.videoUrl) : null
+-
+   return (
+     <>
+-      {/* Video Schema for SEO - only render if video exists */}
+-      {partner.videoUrl && videoId && (
+-        <VideoSchema
+-          name={`${partner.name} Overview Video`}
+-          description={partner.description}
+-          thumbnailUrl={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+-          uploadDate="2024-01-01"
+-          contentUrl={partner.videoUrl}
+-          embedUrl={`https://www.youtube.com/embed/${videoId}`}
+-        />
+-      )}
++      {/* Video Schema is rendered server-side in layout.tsx with a real CSP nonce */}
+       <Header />
+       <main className="min-h-screen pt-20">
+         <div className="container mx-auto px-4 py-16">
+diff --git a/app/partners/[slug]/partners-data.ts b/app/partners/[slug]/partners-data.ts
+new file mode 100644
+index 0000000..a9d225d
+--- /dev/null
++++ b/app/partners/[slug]/partners-data.ts
+@@ -0,0 +1,288 @@
++// Shared partner data — used by both the client page (renders the partner
++// profile) and the server layout (renders VideoSchema JSON-LD with a real
++// CSP nonce).
++
++export function getYouTubeVideoId(url: string): string | null {
++  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
++  const match = url.match(regExp)
++  return match && match[2].length === 11 ? match[2] : null
++}
++
++// Partner data
++export const partnersData: Record<
++  string,
++  {
++    name: string
++    description: string
++    logo: string
++    website: string
++    videoUrl?: string
++    solutions: string[]
++    partnership: string
++    benefits: string[]
++  }
++> = {
++  hp: {
++    name: "HP",
++    description: "Global leader in personal computing and printing solutions for businesses.",
++    logo: "/images/partners/hp-logo.png",
++    website: "https://www.hp.com",
++    videoUrl: "https://www.youtube.com/watch?v=KdB4v9ssdIY",
++    solutions: [
++      "Enterprise Workstations",
++      "Business Laptops & Desktops",
++      "Commercial Printers",
++      "Managed Print Services",
++    ],
++    partnership:
++      "Ardent Prime Innovations has partnered with HP to deliver reliable computing and printing solutions to our clients. This partnership enables us to provide enterprise-grade hardware with comprehensive support and maintenance.",
++    benefits: [
++      "Access to latest HP technologies",
++      "Priority technical support",
++      "Competitive pricing for our clients",
++      "Joint training and certification programs",
++    ],
++  },
++  "ingram-micro": {
++    name: "Ingram Micro",
++    description: "World's largest technology distributor and supply chain solutions provider.",
++    logo: "/images/partners/ingram-micro-logo.png",
++    website: "https://www.ingrammicro.com",
++    videoUrl: "https://www.youtube.com/watch?v=BejEZFMMBJk",
++    solutions: ["Technology Distribution", "Supply Chain Services", "Cloud Solutions", "Lifecycle Services"],
++    partnership:
++      "Our strategic partnership with Ingram Micro ensures we have access to a comprehensive portfolio of technology products and services to meet all client needs.",
++    benefits: [
++      "Extensive product portfolio",
++      "Flexible financing options",
++      "Expert technical resources",
++      "Global logistics support",
++    ],
++  },
++  sectigo: {
++    name: "Sectigo",
++    description: "Global leader in SSL/TLS certificates, digital identity, and automated web security solutions.",
++    logo: "/images/partners/sectigo-logo.png",
++    website: "https://www.sectigo.com",
++    videoUrl: "https://www.youtube.com/watch?v=X5K6i5r7gz0",
++    solutions: [
++      "SSL/TLS Certificates",
++      "Automated Certificate Management",
++      "Web Application Firewall (WAF)",
++      "Code Signing Certificates",
++    ],
++    partnership:
++      "Ardent Prime Innovations has partnered with Sectigo to provide our clients with industry-leading SSL/TLS certificates and comprehensive web security solutions. This partnership ensures that our clients' websites, applications, and digital communications are protected with the highest level of encryption and trust.",
++    benefits: [
++      "Trusted SSL/TLS certificates recognized by all major browsers",
++      "Automated certificate lifecycle management",
++      "Enhanced web application security with WAF protection",
++      "Comprehensive code signing for software integrity",
++    ],
++  },
++  pelco: {
++    name: "Pelco",
++    description: "Industry leader in security camera systems and video surveillance solutions.",
++    logo: "/images/partners/pelco-logo.png",
++    website: "https://www.pelco.com",
++    videoUrl: "https://www.youtube.com/watch?v=B_lw-lMvQnU",
++    solutions: ["IP Security Cameras", "Video Management Systems", "Analytics Software", "PTZ Camera Systems"],
++    partnership:
++      "Through our partnership with Pelco, we provide comprehensive video surveillance solutions to protect your facilities and assets with cutting-edge technology.",
++    benefits: [
++      "High-quality imaging technology",
++      "Advanced video analytics",
++      "Scalable solutions",
++      "Integration capabilities",
++    ],
++  },
++  avigilon: {
++    name: "Avigilon",
++    description: "Advanced AI-powered video security and analytics solutions provider.",
++    logo: "/images/partners/avigilon-logo.png",
++    website: "https://www.avigilon.com",
++    videoUrl: "https://www.youtube.com/watch?v=_4OWxx9RTPw",
++    solutions: [
++      "AI-Powered Video Analytics",
++      "High-Definition Cameras",
++      "Access Control Integration",
++      "Cloud Video Management",
++    ],
++    partnership:
++      "Avigilon collaboration allows us to deliver state-of-the-art AI-powered video security that enhances threat detection and response capabilities.",
++    benefits: [
++      "Advanced AI analytics",
++      "Proactive threat detection",
++      "Cloud-native architecture",
++      "Seamless integration",
++    ],
++  },
++  axis: {
++    name: "Axis Communications",
++    description: "Global leader in network video and access control solutions.",
++    logo: "/images/partners/axis-logo.png",
++    website: "https://www.axis.com",
++    videoUrl: "https://www.youtube.com/watch?v=FnQasRVqI34",
++    solutions: ["Network Cameras", "Video Encoders", "Access Control Systems", "Audio Systems"],
++    partnership:
++      "Our alliance with Axis brings enterprise-grade network video solutions that provide exceptional image quality and reliability.",
++    benefits: [
++      "Industry-leading image quality",
++      "Open platform architecture",
++      "Cybersecurity features",
++      "Wide product range",
++    ],
++  },
++  "motorola-solutions": {
++    name: "Motorola Solutions",
++    description: "Trusted provider of mission-critical communication and security solutions.",
++    logo: "/images/partners/motorola-solutions-logo.png",
++    website: "https://www.motorolasolutions.com",
++    videoUrl: "https://youtu.be/AGmoQOVSPkE?si=oWxuq0Ji9D7Wduzr",
++    solutions: [
++      "Two-Way Radio Systems",
++      "Video Security Solutions",
++      "Command Center Software",
++      "Emergency Response Systems",
++    ],
++    partnership:
++      "Partner with Motorola Solutions ensures your critical communications and security systems are reliable and interoperable.",
++    benefits: [
++      "Mission-critical reliability",
++      "Integrated communication",
++      "Advanced dispatch solutions",
++      "Proven track record",
++    ],
++  },
++  cisco: {
++    name: "Cisco",
++    description: "Global technology leader in networking, security, and collaboration.",
++    logo: "/images/partners/cisco-logo.png",
++    website: "https://www.cisco.com",
++    videoUrl: "https://www.youtube.com/watch?v=GbbWVZDUgoI",
++    solutions: ["Network Infrastructure", "Cybersecurity Solutions", "Collaboration Tools", "Data Center Technologies"],
++    partnership:
++      "Together with Cisco, we offer comprehensive networking and security solutions that form the backbone of modern IT infrastructure.",
++    benefits: [
++      "Industry-leading networking",
++      "Advanced security features",
++      "Scalable architecture",
++      "Global support network",
++    ],
++    
++  },
++  microsoft: {
++    name: "Microsoft",
++    description: "Leading technology company providing cloud, productivity, and AI solutions.",
++    logo: "/images/partners/microsoft-logo.png",
++    website: "https://www.microsoft.com",
++    videoUrl: "https://www.youtube.com/watch?v=1aXrgLlqdbg",
++    solutions: ["Microsoft 365", "Azure Cloud Services", "Windows Server", "Dynamics 365"],
++    partnership:
++      "Our Microsoft partnership enables us to deliver powerful productivity and cloud solutions that transform how businesses operate.",
++    benefits: [
++      "Complete productivity suite",
++      "Enterprise cloud platform",
++      "Advanced AI capabilities",
++      "Seamless integration",
++    ],
++  },
++  paloalto: {
++    name: "Palo Alto Networks",
++    description: "Cybersecurity leader providing next-generation firewall and cloud security.",
++    logo: "/images/partners/paloalto-logo.png",
++    website: "https://www.paloaltonetworks.com",
++    videoUrl: "https://www.youtube.com/watch?v=fABJuCYMAyY",
++    solutions: ["Next-Generation Firewalls", "Cloud Security", "Threat Intelligence", "Security Operations"],
++    partnership:
++      "Palo Alto Networks advanced security solutions protect your network and cloud infrastructure from sophisticated cyber threats.",
++    benefits: [
++      "AI-powered threat prevention",
++      "Zero Trust architecture",
++      "Cloud-native security",
++      "Automated response",
++    ],
++  },
++  milestone: {
++    name: "Milestone Systems",
++    description: "Open platform video management software for IP video surveillance.",
++    logo: "/images/partners/milestone-logo.png",
++    website: "https://www.milestonesys.com",
++    videoUrl: "https://www.youtube.com/watch?v=mICW-oLDk2M",
++    solutions: ["XProtect VMS", "Video Analytics", "Camera Integration", "Mobile Client Solutions"],
++    partnership:
++      "Through Milestone partnership, we provide flexible and scalable video management solutions that work with hundreds of camera types.",
++    benefits: ["Open platform flexibility", "Unlimited scalability", "Extensive integrations", "Mobile accessibility"],
++  },
++  vivotek: {
++    name: "Vivotek",
++    description: "Professional IP surveillance solutions with high-quality network cameras.",
++    logo: "/images/partners/vivotek-logo.png",
++    website: "https://www.vivotek.com",
++    videoUrl: "https://www.youtube.com/watch?v=kKHg74uBg1Q",
++    solutions: ["Network Cameras", "Video Servers", "Recording Solutions", "Software Integration"],
++    partnership:
++      "Vivotek collaboration enables us to offer cost-effective IP surveillance solutions with professional-grade features.",
++    benefits: ["High-quality imaging", "Weatherproof designs", "Smart stream technology", "Value pricing"],
++  },
++  reolink: {
++    name: "Reolink",
++    description: "Innovative security camera systems for home and business applications.",
++    logo: "/images/partners/reolink-logo.png",
++    website: "https://www.reolink.com",
++    videoUrl: "https://www.youtube.com/watch?v=IkRMhWVlFp8",
++    solutions: ["PoE Camera Systems", "Wireless Security Cameras", "NVR Solutions", "Solar-Powered Cameras"],
++    partnership:
++      "Our partnership with Reolink provides accessible and reliable security solutions for small to medium-sized businesses.",
++    benefits: ["Easy installation", "Affordable pricing", "Mobile app access", "Local storage options"],
++  },
++  fortinet: {
++    name: "Fortinet",
++    description: "Global leader in cybersecurity solutions and unified threat management.",
++    logo: "/images/partners/fortinet-logo.png",
++    website: "https://www.fortinet.com",
++    videoUrl: "https://www.youtube.com/watch?v=o0btrmZcmGI",
++    solutions: ["FortiGate Firewalls", "Secure SD-WAN", "Endpoint Security", "Security Fabric"],
++    partnership:
++      "Fortinet partnership delivers comprehensive cybersecurity solutions that protect your network with industry-leading threat protection.",
++    benefits: [
++      "Integrated security fabric",
++      "High-performance firewalls",
++      "AI-powered detection",
++      "Centralized management",
++    ],
++  },
++  "schneider-electric": {
++    name: "Schneider Electric",
++    description: "Global specialist in energy management and industrial automation.",
++    logo: "/images/partners/schneider-electric-logo.png",
++    website: "https://www.se.com",
++    videoUrl: "https://www.youtube.com/watch?v=mfWWvpEa3Us",
++    solutions: ["UPS Systems", "Power Distribution", "Data Center Infrastructure", "Building Automation"],
++    partnership:
++      "Through Schneider Electric, we provide reliable power management and automation solutions for critical infrastructure.",
++    benefits: ["Energy efficiency", "Reliable power protection", "Smart building integration", "Sustainability focus"],
++  },
++  "td-synnex": {
++    name: "TD SYNNEX",
++    description: "Leading IT distributor and solutions aggregator for technology ecosystem.",
++    logo: "/images/partners/td-synnex-logo.png",
++    website: "https://www.tdsynnex.com",
++    videoUrl: "https://www.youtube.com/watch?v=DOosZShL-w0",
++    solutions: ["Technology Distribution", "Cloud Services", "Endpoint Solutions", "Business Process Services"],
++    partnership:
++      "Our alliance with TD SYNNEX provides access to comprehensive technology solutions and value-added services for our clients.",
++    benefits: ["Broad product portfolio", "Cloud marketplace", "Financial services", "Technical expertise"],
++  },
++  "dell-technologies": {
++    name: "Dell Technologies",
++    description: "Global technology leader in computing, storage, and infrastructure solutions.",
++    logo: "/images/partners/dell-technologies-logo.png",
++    website: "https://www.delltechnologies.com",
++    videoUrl: "https://www.youtube.com/watch?v=X0pZDGMKhsk",
++    solutions: ["PowerEdge Servers", "Storage Solutions", "Networking Equipment", "Workstations"],
++    partnership:
++      "Dell Technologies partnership enables us to deliver enterprise-grade infrastructure solutions backed by world-class support.",
++    benefits: ["Enterprise-grade hardware", "Comprehensive support", "Scalable solutions", "Proven reliability"],
++  },
++}
+diff --git a/app/services/installation-integration/page.tsx b/app/services/installation-integration/page.tsx
+index 10380f9..d23886a 100644
+--- a/app/services/installation-integration/page.tsx
++++ b/app/services/installation-integration/page.tsx
+@@ -1,6 +1,7 @@
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+ import { ServiceSchema } from "@/components/structured-data"
++import { headers } from "next/headers"
+ import {
+   Wrench,
+   MapPin,
+@@ -60,13 +61,15 @@ const services = [
+   },
+ ]
+ 
+-export default function InstallationIntegrationPage() {
++export default async function InstallationIntegrationPage() {
++  const nonce = (await headers()).get("x-nonce") ?? undefined
+   return (
+     <>
+       <ServiceSchema
+         name="Professional Installation & Integration Services"
+         description="Expert IT installation and integration services including cabling, hardware deployment, firewall installation, and site surveys. Seamless implementation guaranteed."
+         url="https://ardentprime.com/services/installation-integration"
++        nonce={nonce}
+       />
+       <Header />
+       <main className="min-h-screen pt-20">
+diff --git a/app/services/it-infrastructure/page.tsx b/app/services/it-infrastructure/page.tsx
+index c9b09cc..1273736 100644
+--- a/app/services/it-infrastructure/page.tsx
++++ b/app/services/it-infrastructure/page.tsx
+@@ -1,6 +1,7 @@
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+ import { ServiceSchema } from "@/components/structured-data"
++import { headers } from "next/headers"
+ import { Network, RotateCcw, Video, Radio, Lock, Zap, Settings, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react"
+ import { Button } from "@/components/ui/button"
+ import Link from "next/link"
+@@ -49,13 +50,15 @@ const services = [
+   },
+ ]
+ 
+-export default function ITInfrastructurePage() {
++export default async function ITInfrastructurePage() {
++  const nonce = (await headers()).get("x-nonce") ?? undefined
+   return (
+     <>
+       <ServiceSchema
+         name="IT Infrastructure Services"
+         description="Enterprise-grade IT infrastructure services including network systems, CCTV, audio systems, access control, and power management. Custom solutions for your business."
+         url="https://ardentprime.com/services/it-infrastructure"
++        nonce={nonce}
+       />
+       <Header />
+       <main className="min-h-screen pt-20">
+diff --git a/app/services/managed-it-web/page.tsx b/app/services/managed-it-web/page.tsx
+index b7f98ae..756fbb8 100644
+--- a/app/services/managed-it-web/page.tsx
++++ b/app/services/managed-it-web/page.tsx
+@@ -1,6 +1,7 @@
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+ import { ServiceSchema } from "@/components/structured-data"
++import { headers } from "next/headers"
+ import {
+   Headset,
+   MonitorCheck,
+@@ -58,13 +59,15 @@ const services = [
+   },
+ ]
+ 
+-export default function ManagedITWebPage() {
++export default async function ManagedITWebPage() {
++  const nonce = (await headers()).get("x-nonce") ?? undefined
+   return (
+     <>
+       <ServiceSchema
+         name="Managed IT & Web Services"
+         description="Comprehensive 24/7 managed IT services including monitoring, support, maintenance, and web services. Keep your systems running smoothly and securely."
+         url="https://ardentprime.com/services/managed-it-web"
++        nonce={nonce}
+       />
+       <Header />
+       <main className="min-h-screen pt-20">
+diff --git a/app/support-center/faqs-data.ts b/app/support-center/faqs-data.ts
+new file mode 100644
+index 0000000..23b02ee
+--- /dev/null
++++ b/app/support-center/faqs-data.ts
+@@ -0,0 +1,24 @@
++// Shared FAQ data — used by both the client-side page (renders the accordion)
++// and the server-side layout (renders the FAQPage JSON-LD with a CSP nonce).
++export const faqs = [
++  {
++    question: "How do I reset my password?",
++    answer:
++      "If you are a managed service client, please contact your dedicated IT support line. For other services, please refer to your onboarding documentation.",
++  },
++  {
++    question: "What are your business hours?",
++    answer:
++      "Our standard business hours are Monday-Friday, 8 AM - 5 PM EST. Emergency support is available 24/7 for critical issues.",
++  },
++  {
++    question: "Do you offer onsite support?",
++    answer:
++      "Yes, we offer onsite support for our managed IT service clients based on their service agreement. Please contact us for details.",
++  },
++  {
++    question: "How can I check my service status?",
++    answer:
++      "For managed service clients, you can check your service status through our client portal. Alternatively, you can submit a ticket here.",
++  },
++]
+diff --git a/app/support-center/layout.tsx b/app/support-center/layout.tsx
+index 91c2660..84f15d1 100644
+--- a/app/support-center/layout.tsx
++++ b/app/support-center/layout.tsx
+@@ -1,4 +1,7 @@
+ import type { Metadata } from "next"
++import { headers } from "next/headers"
++import { FAQSchema } from "@/components/faq-schema"
++import { faqs } from "./faqs-data"
+ 
+ export const metadata: Metadata = {
+   title: "Support Center - Contract Customer Support",
+@@ -15,10 +18,16 @@ export const metadata: Metadata = {
+   },
+ }
+ 
+-export default function SupportCenterLayout({
++export default async function SupportCenterLayout({
+   children,
+ }: {
+   children: React.ReactNode
+ }) {
+-  return children
++  const nonce = (await headers()).get("x-nonce") ?? undefined
++  return (
++    <>
++      <FAQSchema faqs={faqs} nonce={nonce} />
++      {children}
++    </>
++  )
+ }
+diff --git a/app/support-center/page.tsx b/app/support-center/page.tsx
+index 1468596..ea10502 100644
+--- a/app/support-center/page.tsx
++++ b/app/support-center/page.tsx
+@@ -2,7 +2,6 @@
+ import { Header } from "@/components/header"
+ import { Footer } from "@/components/footer"
+ import { Breadcrumb } from "@/components/breadcrumb"
+-import { FAQSchema } from "@/components/faq-schema"
+ import { useRouter } from "next/navigation"
+ 
+ import type React from "react"
+@@ -17,6 +16,7 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+ import { submitSupportTicket } from "@/app/actions/support"
+ import { validateEmail } from "@/lib/email-validator"
+ import { validateEmailDomain } from "@/app/actions/validate-email-domain"
++import { faqs } from "./faqs-data"
+ 
+ // Note: Metadata must be in a server component. See app/support-center/layout.tsx for SEO metadata.
+ 
+@@ -246,29 +246,6 @@ export default function SupportCenterPage() {
+     setIsSubmitting(false)
+   }
+ 
+-  const faqs = [
+-    {
+-      question: "How do I reset my password?",
+-      answer:
+-        "If you are a managed service client, please contact your dedicated IT support line. For other services, please refer to your onboarding documentation.",
+-    },
+-    {
+-      question: "What are your business hours?",
+-      answer:
+-        "Our standard business hours are Monday-Friday, 8 AM - 5 PM EST. Emergency support is available 24/7 for critical issues.",
+-    },
+-    {
+-      question: "Do you offer onsite support?",
+-      answer:
+-        "Yes, we offer onsite support for our managed IT service clients based on their service agreement. Please contact us for details.",
+-    },
+-    {
+-      question: "How can I check my service status?",
+-      answer:
+-        "For managed service clients, you can check your service status through our client portal. Alternatively, you can submit a ticket here.",
+-    },
+-  ]
+-
+   return (
+     <div className="min-h-screen bg-background">
+       <Header />
+@@ -507,8 +484,7 @@ export default function SupportCenterPage() {
+             <p className="text-muted-foreground">Find solutions to common issues and learn more about our services.</p>
+           </div>
+ 
+-          {/* Inject FAQ Schema for search results */}
+-          <FAQSchema faqs={faqs} />
++          {/* FAQ Schema is rendered server-side in layout.tsx with a real CSP nonce */}
+ 
+           <div className="space-y-4">
+             {faqs.map((faq, index) => (
+diff --git a/components/faq-schema.tsx b/components/faq-schema.tsx
+index dde5024..4815e8b 100644
+--- a/components/faq-schema.tsx
++++ b/components/faq-schema.tsx
+@@ -5,9 +5,10 @@ interface FAQItem {
+ 
+ interface FAQSchemaProps {
+   faqs: FAQItem[]
++  nonce?: string
+ }
+ 
+-export function FAQSchema({ faqs }: FAQSchemaProps) {
++export function FAQSchema({ faqs, nonce }: FAQSchemaProps) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "FAQPage",
+@@ -24,6 +25,7 @@ export function FAQSchema({ faqs }: FAQSchemaProps) {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+diff --git a/components/structured-data.tsx b/components/structured-data.tsx
+index 45329d4..eefe58d 100644
+--- a/components/structured-data.tsx
++++ b/components/structured-data.tsx
+@@ -1,7 +1,7 @@
+ // JSON-LD Structured Data for SEO
+ // Helps search engines understand the business and display rich results
+ 
+-export function OrganizationSchema() {
++export function OrganizationSchema({ nonce }: { nonce?: string } = {}) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "Organization",
+@@ -58,12 +58,13 @@ export function OrganizationSchema() {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+ }
+ 
+-export function LocalBusinessSchema() {
++export function LocalBusinessSchema({ nonce }: { nonce?: string } = {}) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "LocalBusiness",
+@@ -102,12 +103,13 @@ export function LocalBusinessSchema() {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+ }
+ 
+-export function WebsiteSchema() {
++export function WebsiteSchema({ nonce }: { nonce?: string } = {}) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "WebSite",
+@@ -131,6 +133,7 @@ export function WebsiteSchema() {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+@@ -140,9 +143,10 @@ interface ServiceSchemaProps {
+   name: string
+   description: string
+   url: string
++  nonce?: string
+ }
+ 
+-export function ServiceSchema({ name, description, url }: ServiceSchemaProps) {
++export function ServiceSchema({ name, description, url, nonce }: ServiceSchemaProps) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "Service",
+@@ -164,6 +168,7 @@ export function ServiceSchema({ name, description, url }: ServiceSchemaProps) {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+@@ -174,7 +179,7 @@ interface BreadcrumbItem {
+   url: string
+ }
+ 
+-export function BreadcrumbSchema({ items }: { items: BreadcrumbItem[] }) {
++export function BreadcrumbSchema({ items, nonce }: { items: BreadcrumbItem[]; nonce?: string }) {
+   const schema = {
+     "@context": "https://schema.org",
+     "@type": "BreadcrumbList",
+@@ -189,6 +194,7 @@ export function BreadcrumbSchema({ items }: { items: BreadcrumbItem[] }) {
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+@@ -203,6 +209,7 @@ interface VideoSchemaProps {
+   contentUrl: string
+   embedUrl: string
+   duration?: string
++  nonce?: string
+ }
+ 
+ export function VideoSchema({ 
+@@ -212,7 +219,8 @@ export function VideoSchema({
+   uploadDate, 
+   contentUrl, 
+   embedUrl,
+-  duration 
++  duration,
++  nonce,
+ }: VideoSchemaProps) {
+   const schema = {
+     "@context": "https://schema.org",
+@@ -237,6 +245,7 @@ export function VideoSchema({
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+@@ -251,6 +260,7 @@ interface ArticleSchemaProps {
+   dateModified?: string
+   author?: string
+   url: string
++  nonce?: string
+ }
+ 
+ export function ArticleSchema({
+@@ -261,6 +271,7 @@ export function ArticleSchema({
+   dateModified,
+   author = "Ardent Prime Team",
+   url,
++  nonce,
+ }: ArticleSchemaProps) {
+   const schema = {
+     "@context": "https://schema.org",
+@@ -291,6 +302,7 @@ export function ArticleSchema({
+   return (
+     <script
+       type="application/ld+json"
++      nonce={nonce}
+       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+     />
+   )
+diff --git a/lib/sanitize.ts b/lib/sanitize.ts
+new file mode 100644
+index 0000000..c8876e7
+--- /dev/null
++++ b/lib/sanitize.ts
+@@ -0,0 +1,15 @@
++// Escapes HTML special characters so user-supplied text can be safely
++// interpolated into HTML email templates (contact form, support tickets, etc).
++// Without this, a submitted name/message containing "<", ">", "&", or quotes
++// is inserted verbatim into the outgoing HTML email, which can break the
++// layout, forge extra content, or (in mail clients that render HTML loosely)
++// execute markup that was never intended to run.
++export function escapeHtml(value: string | null | undefined): string {
++  if (!value) return ""
++  return String(value)
++    .replace(/&/g, "&amp;")
++    .replace(/</g, "&lt;")
++    .replace(/>/g, "&gt;")
++    .replace(/"/g, "&quot;")
++    .replace(/'/g, "&#39;")
++}
+diff --git a/middleware.ts b/middleware.ts
+new file mode 100644
+index 0000000..e04a476
+--- /dev/null
++++ b/middleware.ts
+@@ -0,0 +1,45 @@
++import { NextResponse } from "next/server"
++import type { NextRequest } from "next/server"
++
++// Generates a fresh per-request nonce and builds a strict CSP that no longer
++// relies on 'unsafe-inline' / 'unsafe-eval'. The nonce is forwarded to the
++// app via the `x-nonce` request header so Server Components can read it
++// (see app/layout.tsx) and attach it to the inline <script> tags that need
++// to keep running (Google Analytics bootstrap, JSON-LD structured data).
++export function middleware(request: NextRequest) {
++  const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
++
++  const cspHeader = `
++    default-src 'self';
++    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://www.googletagmanager.com;
++    style-src 'self' 'nonce-${nonce}';
++    img-src 'self' data: https: blob:;
++    font-src 'self' data:;
++    connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com;
++    frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com;
++    frame-ancestors 'self';
++    base-uri 'self';
++    form-action 'self';
++    object-src 'none';
++    upgrade-insecure-requests;
++  `
++    .replace(/\s{2,}/g, " ")
++    .trim()
++
++  const requestHeaders = new Headers(request.headers)
++  requestHeaders.set("x-nonce", nonce)
++
++  const response = NextResponse.next({
++    request: { headers: requestHeaders },
++  })
++  response.headers.set("Content-Security-Policy", cspHeader)
++  return response
++}
++
++export const config = {
++  matcher: [
++    // Run on everything except static assets and image optimization files,
++    // which don't render HTML and don't need a per-request nonce.
++    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
++  ],
++}
+diff --git a/next.config.mjs b/next.config.mjs
+index dc51b00..54da48c 100644
+--- a/next.config.mjs
++++ b/next.config.mjs
+@@ -59,9 +59,31 @@ const nextConfig = {
+             key: 'Permissions-Policy',
+             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+           },
++          // Content-Security-Policy is now generated per-request in middleware.ts
++          // with a fresh nonce, so it no longer needs 'unsafe-inline' / 'unsafe-eval'.
+           {
+-            key: 'Content-Security-Policy',
+-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://www.youtube.com https://s.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
++            key: 'Cross-Origin-Opener-Policy',
++            value: 'same-origin'
++          },
++          {
++            key: 'Cross-Origin-Resource-Policy',
++            value: 'same-origin'
++          },
++        ],
++      },
++      {
++        // API routes previously inherited a site-wide `Access-Control-Allow-Origin: *`
++        // from the platform default. Scope it explicitly instead of leaving every
++        // route open to being called from any origin.
++        source: '/api/:path*',
++        headers: [
++          {
++            key: 'Access-Control-Allow-Origin',
++            value: 'https://ardentprime.com'
++          },
++          {
++            key: 'Access-Control-Allow-Methods',
++            value: 'GET, POST, OPTIONS'
+           },
+         ],
+       },

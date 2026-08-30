@@ -1,7 +1,7 @@
 // JSON-LD Structured Data for SEO
 // Helps search engines understand the business and display rich results
 
-export function OrganizationSchema() {
+export function OrganizationSchema({ nonce }: { nonce?: string } = {}) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -58,12 +58,13 @@ export function OrganizationSchema() {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
 }
 
-export function LocalBusinessSchema() {
+export function LocalBusinessSchema({ nonce }: { nonce?: string } = {}) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -102,12 +103,13 @@ export function LocalBusinessSchema() {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
 }
 
-export function WebsiteSchema() {
+export function WebsiteSchema({ nonce }: { nonce?: string } = {}) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -131,6 +133,7 @@ export function WebsiteSchema() {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -140,9 +143,10 @@ interface ServiceSchemaProps {
   name: string
   description: string
   url: string
+  nonce?: string
 }
 
-export function ServiceSchema({ name, description, url }: ServiceSchemaProps) {
+export function ServiceSchema({ name, description, url, nonce }: ServiceSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -164,6 +168,7 @@ export function ServiceSchema({ name, description, url }: ServiceSchemaProps) {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -174,7 +179,7 @@ interface BreadcrumbItem {
   url: string
 }
 
-export function BreadcrumbSchema({ items }: { items: BreadcrumbItem[] }) {
+export function BreadcrumbSchema({ items, nonce }: { items: BreadcrumbItem[]; nonce?: string }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -189,6 +194,7 @@ export function BreadcrumbSchema({ items }: { items: BreadcrumbItem[] }) {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -203,6 +209,7 @@ interface VideoSchemaProps {
   contentUrl: string
   embedUrl: string
   duration?: string
+  nonce?: string
 }
 
 export function VideoSchema({ 
@@ -212,7 +219,8 @@ export function VideoSchema({
   uploadDate, 
   contentUrl, 
   embedUrl,
-  duration 
+  duration,
+  nonce,
 }: VideoSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
@@ -237,6 +245,7 @@ export function VideoSchema({
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )
@@ -251,6 +260,7 @@ interface ArticleSchemaProps {
   dateModified?: string
   author?: string
   url: string
+  nonce?: string
 }
 
 export function ArticleSchema({
@@ -261,6 +271,7 @@ export function ArticleSchema({
   dateModified,
   author = "Ardent Prime Team",
   url,
+  nonce,
 }: ArticleSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
@@ -291,6 +302,7 @@ export function ArticleSchema({
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   )

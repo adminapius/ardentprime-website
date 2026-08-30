@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { validateEmail, validateFullName } from "@/lib/email-validator"
 import { validateEmailDomain } from "@/app/actions/validate-email-domain"
 import { checkContactRateLimit, getSubmissionIP } from "@/app/actions/rate-limit"
+import { escapeHtml } from "@/lib/sanitize"
 
 async function sendEmail(params: { from: string; to: string[]; subject: string; html: string }) {
   const res = await fetch("https://api.resend.com/emails", {
@@ -94,21 +95,45 @@ export async function submitContactForm(formData: {
     const supabase = createAdminClient()
     const ip = await getSubmissionIP()
 
-    // Check for duplicate within past week (existing logic)
+    // Check for duplicate within past week (existing logic).
+    // NOTE: previously this ran a single `.or()` call with the user's email,
+    // phone, and name interpolated directly into the PostgREST filter string.
+    // Since `.or()` syntax uses commas/periods as filter separators, a
+    // submitted value containing those characters could inject additional
+    // filter clauses. Running separate, properly parameterized `.eq()`
+    // queries avoids that entirely.
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const oneWeekAgoISO = oneWeekAgo.toISOString()
 
-    const { data: existingSubmissions, error: checkError } = await supabase
-      .from("contact_submissions")
-      .select("*")
-      .gte("created_at", oneWeekAgo.toISOString())
-      .or(`email.eq.${formData.email},phone.eq.${formData.phone},full_name.eq.${formData.fullName}`)
+    const duplicateChecks = await Promise.all([
+      supabase
+        .from("contact_submissions")
+        .select("id")
+        .gte("created_at", oneWeekAgoISO)
+        .eq("email", formData.email),
+      formData.phone
+        ? supabase
+            .from("contact_submissions")
+            .select("id")
+            .gte("created_at", oneWeekAgoISO)
+            .eq("phone", formData.phone)
+        : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from("contact_submissions")
+        .select("id")
+        .gte("created_at", oneWeekAgoISO)
+        .eq("full_name", formData.fullName),
+    ])
 
+    const checkError = duplicateChecks.find((r) => r.error)?.error
     if (checkError) {
       console.error("Error checking for duplicate submissions:", checkError)
     }
 
-    if (existingSubmissions && existingSubmissions.length > 0) {
+    const existingSubmissions = duplicateChecks.flatMap((r) => r.data ?? [])
+
+    if (existingSubmissions.length > 0) {
       return {
         success: false,
         error:
@@ -142,20 +167,20 @@ export async function submitContactForm(formData: {
       await sendEmail({
         from: "ARDENT PRIME (No-Reply) <no-reply@ardentprime.com>",
         to: ["sales@ardentprime.com"],
-        subject: `[ArdentPrime Sales] New Contact Inquiry - ${serviceName}`,
+        subject: `[ArdentPrime Sales] New Contact Inquiry - ${serviceName.replace(/[\r\n]/g, " ")}`,
         html: `<div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 14px; color: #222; line-height: 1.6; max-width: 600px;">
 <p><strong>New contact form submission received:</strong></p>
 
 <table style="border-collapse: collapse; margin: 16px 0;">
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${formData.fullName}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${formData.email}" style="color: #1a73e8;">${formData.email}</a></td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${formData.phone}" style="color: #1a73e8;">${formData.phone}</a></td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${formData.company || "Not provided"}</td></tr>
-  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Service:</td><td style="padding: 4px 0;">${serviceName}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Name:</td><td style="padding: 4px 0;">${escapeHtml(formData.fullName)}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Email:</td><td style="padding: 4px 0;"><a href="mailto:${encodeURIComponent(formData.email)}" style="color: #1a73e8;">${escapeHtml(formData.email)}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Phone:</td><td style="padding: 4px 0;"><a href="tel:${encodeURIComponent(formData.phone ?? "")}" style="color: #1a73e8;">${escapeHtml(formData.phone)}</a></td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Company:</td><td style="padding: 4px 0;">${escapeHtml(formData.company) || "Not provided"}</td></tr>
+  <tr><td style="padding: 4px 16px 4px 0; font-weight: bold; color: #555; vertical-align: top;">Service:</td><td style="padding: 4px 0;">${escapeHtml(serviceName)}</td></tr>
 </table>
 
 <p><strong>Message:</strong></p>
-<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${formData.message}</p>
+<p style="margin: 4px 0 0; padding: 10px; background: #f7f7f7; border-left: 3px solid #1a73e8;">${escapeHtml(formData.message)}</p>
 
 <br/>
 <p style="font-size: 12px; color: #999;">Sent from the Ardent Prime website contact form.</p>
